@@ -1,5 +1,5 @@
-title: Jun's Dev Blog
-description: Welcome to my GitHub Pages site powered by Jekyll and RTD theme!
+title: Junho's Blog
+description: Welcome to my GitHub Pages site
 baseurl: ""
 url: "https://junofficial.github.io"
 
@@ -8,7 +8,7 @@ webrick:
     Access-Control-Allow-Origin: "*"
 
 # Theme settings
-site_author: Jun Official 
+site_author: Junofficial 
 repo_url: 'https://github.com/junofficial/junofficial.github.io'
 edit_on_github: true
 github_docs_folder: false
