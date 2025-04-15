@@ -1,0 +1,19 @@
+title: Jun's Dev Blog
+description: Welcome to my GitHub Pages site powered by Jekyll and RTD theme!
+baseurl: ""
+url: "https://junofficial.github.io"
+
+webrick:
+  headers:
+    Access-Control-Allow-Origin: "*"
+
+# Theme settings
+site_author: Jun Official 
+repo_url: 'https://github.com/junofficial/junofficial.github.io'
+edit_on_github: true
+github_docs_folder: false
+sticky_navigation: true
+prev_next_buttons_location: both
+search_enabled: true
+hljs_style: github-gist
+
