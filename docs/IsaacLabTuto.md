@@ -44,6 +44,16 @@ if CUDA 12, install
 '''bash
 pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu121
 
+To install Isaac Sim packages with pip, first we have to update pip
+
+'''bash
+pip install --upgrade pip
+
+Then, install Isaac Sim
+
+'''bash
+pip install 'isaacsim[all,extscache]==4.5.0' --extra-index-url https://pypi.nvidia.com
+
 ### Isaac Lab install
 
 
