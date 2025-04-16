@@ -31,7 +31,7 @@ We’ll use a conda virtual environment based on Python 3.10 to create an isolat
 '''bash
 conda create -b isaaclab python=3.10
 conda activate isaaclab
-```
+'''
 
 Next, install PyTorch 2.5.1 with CUDA support, depending on your system's CUDA version.
 
@@ -39,25 +39,25 @@ if CUDA 11, install
 
 '''bash
 pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu118
-```
+'''
 
 if CUDA 12, install 
 
 '''bash
 pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu121
-```
+'''
 
 To install Isaac Sim packages with pip, first we have to update pip
 
 '''bash
 pip install --upgrade pip
-```
+'''
 
 Then, install Isaac Sim
 
 '''bash
 pip install 'isaacsim[all,extscache]==4.5.0' --extra-index-url https://pypi.nvidia.com
-```
+'''
 
 #### Verifying the installation
 
@@ -65,13 +65,13 @@ Check if Isaac Sim is running with this code
  
 '''bash
 isaacsim
-```
+'''
 
 while, running Isaac Sim first time, There will be LICENSE AGREEMENT. To accept the EULA, reply yes for the operation.
 
 '''
 Do you accept the EULA? (Yes/No): Yes
-```
+'''
 
 ### Isaac Lab install
 
