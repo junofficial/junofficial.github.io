@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Isaac Lab Tutorial
-nav_order: 2
+nav_order: 1
 ---
 
 # Isaac Lab Tutorial
@@ -48,10 +48,8 @@ pip install --upgrade pip
 pip install 'isaacsim[all,extscache]==4.5.0' --extra-index-url https://pypi.nvidia.com
 ```
 
-#### Verifying the installation
-
 다음 코드를 사용하여 Isaac Sim이 정상적으로 실행되는지 확인하세요:
- ```bash
+```bash
 isaacsim
 ```
 

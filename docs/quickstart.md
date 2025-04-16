@@ -1,7 +1,7 @@
 ---
 layout: default
-title: Isaac Lab Tutorial
-nav_order: 1
+title: Check
+nav_order: 4
 ---
 
 #  Isaac Lab Tutorial
