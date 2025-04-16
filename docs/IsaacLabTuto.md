@@ -54,19 +54,19 @@ Then, install Isaac Sim
 '''bash
 pip install 'isaacsim[all,extscache]==4.5.0' --extra-index-url https://pypi.nvidia.com
 
+#### Verifying the installation
+
+Check if Isaac Sim is running with this code
+ 
+'''bash
+isaacsim
+
+while, running Isaac Sim first time, There will be LICENSE AGREEMENT. To accept the EULA, reply yes for the operation.
+
+'''
+Do you accept the EULA? (Yes/No): Yes
+
 ### Isaac Lab install
 
 
-You can install IsaacLab using pip, either directly from the GitHub repository or by cloning and installing it locally in editable mode.
 
-There are two simple methods to do this:
-
-1. Installing via pip from GitHub  
-2. Cloning the repository and installing locally
-
-## Prerequisites
-
-Make sure Isaac Sim is installed and that the Python environment is set up:
-
-```bash
-$ source ~/.local/share/ov/pkg/isaac_sim-*/setup_python_env.sh

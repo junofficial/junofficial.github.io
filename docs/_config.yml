@@ -11,7 +11,7 @@ webrick:
 site_author: Junofficial 
 repo_url: 'https://github.com/junofficial/junofficial.github.io'
 edit_on_github: true
-github_docs_folder: true
+github_docs_folder: false
 sticky_navigation: true
 prev_next_buttons_location: both
 search_enabled: true
