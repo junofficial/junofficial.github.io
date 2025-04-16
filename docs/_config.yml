@@ -1,19 +1,13 @@
 title: Junho's Blog
 description: Welcome to my GitHub Pages site
-baseurl: ""
-url: "https://junofficial.github.io"
+remote_theme: carlosperate/jekyll-theme-rtd
 
-webrick:
-  headers:
-    Access-Control-Allow-Origin: "*"
-
-# Theme settings
+# Theme settings:
 site_author: Junofficial 
 repo_url: 'https://github.com/junofficial/junofficial.github.io'
 edit_on_github: true
-github_docs_folder: false
+github_docs_folder: true
 sticky_navigation: true
-prev_next_buttons_location: both
+prev_next_buttons_location: bottom
 search_enabled: true
 hljs_style: github-gist
-
