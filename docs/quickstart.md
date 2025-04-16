@@ -1,10 +1,10 @@
 ---
 layout: default
-title: 🚀 Quick Start With GitHub Pages
+title: Isaac Lab Tutorial
 nav_order: 1
 ---
 
-# 🚀 Quick Start With GitHub Pages
+#  Isaac Lab Tutorial
 
 There are several ways to configure the
 [GitHub Pages publishing source](https://help.github.com/en/github/working-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site),
