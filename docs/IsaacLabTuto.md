@@ -63,5 +63,38 @@ Do you accept the EULA? (Yes/No): Yes
 
 ### Isaac Lab install
 
+먼저 git을 통해서 isaac lab을 설치해 줍니다.
 
+```bash
+git clone git@github.com:isaac-sim/IsaacLab.git
+```
 
+이후 cmake의존성을 설치해 줍니다.
+
+```bash
+sudo apt install cmake build-essential
+```
+
+설치 완료된 이후 IsaacLab폴더에 들어가서 프로젝트에서 제공하는 shell을 통해서 IsaacLab에 필요한 pip들을 설치해줍니다.
+
+```bash
+./isaaclab.sh --install
+```
+
+이후 Isaac Lab이 올바르게 설치됬는지 쉘 스크립트를 통해서 create_empty.py를 실행해 줍니다.
+
+```bash
+./isaaclab.sh -p scripts/tutorials/00_sim/create_empty.py
+```
+
+이 shell 코드는 밑의 파이썬 실행 코드와 같은 역할을 합니다.
+
+```bash
+python scripts/tutorials/00_sim/create_empty.py
+```
+
+## Things to know
+
+### Available environments
+
+### Task design
