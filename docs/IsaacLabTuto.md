@@ -95,6 +95,8 @@ python scripts/tutorials/00_sim/create_empty.py
 
 ## Things to know
 
+이 목차에서는 Isaac Lab을 사용하기 전에 알고 있으면 좋을 내용들에 대해서 정리해 놓았습니다. 실행이 우선이면 example을 통해 예제를 확인하시고 
+
 ### Available environments
 
 Isaac Lab은 다양한 로봇 제어 및 강화 학습 실험을 위한 환경들을 제공합니다. 각 환경은 특정 로봇 유형, 제어 목적, 시뮬레이션 설정에 따라 구성되어 있으며 여러 카테고리로 나뉩니다.
@@ -102,6 +104,31 @@ Isaac Lab은 다양한 로봇 제어 및 강화 학습 실험을 위한 환경�
 이와 관련한 문서의 링크를 하이퍼링크를 통해 남깁니다.
 
 [Isaac Lab에서 사용 가능한  Environment](https://isaac-sim.github.io/IsaacLab/main/source/overview/environments.html).
+
+또한 IsaacLab폴더에서 shell 스크립트를 통해서 사용가능한 env목록들을 확인할 수 있습니다.
+
+```bash
+./isaaclab.sh -p scripts/environments/list_envs.py
+```
+
+이러한 환경을 강화학습을 통해 학습시키는 명령어는 다음과 같습니다.
+
+```bash
+python scripts/reinforcement_learning/<specific-rl-library>/train.py --task=<Task-Name>
+```
+
+<specific-rl-library>에 사용 가능한 강화학습 라이브러리를 선택해주고 (예 : rsl_rl) 원하는 환경을 <Task-Name>에 작성하면 됩니다. (예 : Isaac-Cartpole-Direct-v0)
+
+또한 zero-action 혹은 random-action을 통해 환경을 확인하고 싶다면 하단의 명령어를 사용하면 됩니다.
+
+```bash
+python scripts/zero_agent.py --task=<Task-Name>
+```
+
+```bash
+python scripts/random_agent.py --task=<Task-Name>
+```
+
 ### Task design
 
 ## Example
