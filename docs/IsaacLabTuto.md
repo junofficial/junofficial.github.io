@@ -97,4 +97,25 @@ python scripts/tutorials/00_sim/create_empty.py
 
 ### Available environments
 
+Isaac Lab은 다양한 로봇 제어 및 강화 학습 실험을 위한 환경들을 제공합니다. 각 환경은 특정 로봇 유형, 제어 목적, 시뮬레이션 설정에 따라 구성되어 있으며 여러 카테고리로 나뉩니다.
+
+이와 관련한 문서의 링크를 하이퍼링크를 통해 남깁니다.
+
+[Isaac Lab에서 사용 가능한  Environment](https://isaac-sim.github.io/IsaacLab/main/source/overview/environments.html).
 ### Task design
+
+## Example
+
+### Direct task
+
+### Manager-based task
+
+## TIPS
+
+### Urdf to usd
+
+### Creating new env
+
+
+
+
