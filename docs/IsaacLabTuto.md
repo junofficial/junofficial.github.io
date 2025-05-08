@@ -117,7 +117,7 @@ Isaac Lab은 다양한 로봇 제어 및 강화 학습 실험을 위한 환경�
 python scripts/reinforcement_learning/<specific-rl-library>/train.py --task=<Task-Name>
 ```
 
-<specific-rl-library>에 사용 가능한 강화학습 라이브러리를 선택해주고 (예 : rsl_rl) 원하는 환경을 <Task-Name>에 작성하면 됩니다. (예 : Isaac-Cartpole-Direct-v0)
+specific-rl-library 부분에 사용 가능한 강화학습 라이브러리를 선택해주고 (예 : rsl_rl) 원하는 환경을 Task-Name 부분에 작성하면 됩니다. (예 : Isaac-Cartpole-Direct-v0)
 
 또한 zero-action 혹은 random-action을 통해 환경을 확인하고 싶다면 하단의 명령어를 사용하면 됩니다.
 
