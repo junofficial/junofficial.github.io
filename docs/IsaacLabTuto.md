@@ -131,13 +131,97 @@ python scripts/random_agent.py --task=<Task-Name>
 
 ### Task design
 
-Isaac Lab에서의 Task는 특정 에이전트(로봇)에 대한 관측(observations)과 행동(actions)을 정의하는 환경(environment)으로 구성됩니다. 이러한 환경은 에이전트에게 현재 상태를 제공하고, 에이전트의 행동을 시뮬레이션을 통해 실행합니다. Isaac Lab은 이러한 Task를 설계하기 위한 두 가지 주요 워크플로우를 제공합니다:
+Isaac Lab에서의 Task는 특정 에이전트(로봇)에 대한 관측(observations)과 행동(actions)을 정의하는 환경(environment)으로 구성됩니다. 이러한 환경은 에이전트에게 현재 상태를 제공하고, 에이전트의 행동을 시뮬레이션을 통해 실행합니다. Isaac Lab은 이러한 Task를 설계하기 위해 Manager-based와 direct 같은 두 가지 주요 워크플로우를 제공합니다:
 
-#### Manager 기반 워크플로우
+#### Manager-based 워크플로우
+
+![steps screenshot](assets/img/manager-based-light.svg)
+
+Manager 기반 환경은 Task를 여러 개의 독립적인 구성 요소(Managers)로 분해하여 모듈화된 구현을 촉진합니다. 각 Manager는 보상 계산, 관측 처리, 행동 적용, 무작위화 등 특정 기능을 담당하며, 사용자는 각 Manager에 대한 구성 클래스를 정의합니다. 이러한 Managers는 envs.ManagerBasedEnv를 상속하는 환경 클래스에 의해 조정되며, 다양한 구성을 쉽게 교체하거나 확장할 수 있습니다.
+
+**장점:**
+  - 모듈화된 설계로 구성 요소의 재사용성과 유지보수성이 높습니다.
+  - 다양한 구성을 실험하고 프로토타이핑하기에 용이합니다.
+  - 협업 시 각 구성 요소를 독립적으로 개발하고 통합할 수 있습니다.
+
+**단점:**
+
+ - 구현의 복잡성이 증가할 수 있으며, 각 Manager 간의 상호작용을 명확히 이해해야 합니다.
+ - 세밀한 제어가 필요한 경우에는 제한적일 수 있습니다.
+
+Manager-based로 작성된 reward함수는 다음과 같습니다.
+
+```python
+@configclass
+class RewardsCfg:
+    """Reward terms for the MDP."""
+
+    # (1) Constant running reward
+    alive = RewTerm(func=mdp.is_alive, weight=1.0)
+    # (2) Failure penalty
+    terminating = RewTerm(func=mdp.is_terminated, weight=-2.0)
+    # (3) Primary task: keep pole upright
+    pole_pos = RewTerm(
+        func=mdp.joint_pos_target_l2,
+        weight=-1.0,
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["cart_to_pole"]), "target": 0.0},
+    )
+    # (4) Shaping tasks: lower cart velocity
+    cart_vel = RewTerm(
+        func=mdp.joint_vel_l1,
+        weight=-0.01,
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["slider_to_cart"])},
+    )
+    # (5) Shaping tasks: lower pole angular velocity
+    pole_vel = RewTerm(
+        func=mdp.joint_vel_l1,
+        weight=-0.005,
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["cart_to_pole"])},
+    )
+```
+
+#### Direct 워크플로우
 
 ![steps screenshot](assets/img/direct-based-light.svg)
 
-Manager 기반 환경은 Task를 여러 개의 독립적인 구성 요소(Managers)로 분해하여 모듈화된 구현을 촉진합니다. 각 Manager는 보상 계산, 관측 처리, 행동 적용, 무작위화 등 특정 기능을 담당하며, 사용자는 각 Manager에 대한 구성 클래스를 정의합니다. 이러한 Managers는 envs.ManagerBasedEnv를 상속하는 환경 클래스에 의해 조정되며, 다양한 구성을 쉽게 교체하거나 확장할 수 있습니다.
+Direct 워크플로우는 전통적인 환경 구현 방식과 유사하게, 단일 클래스에서 보상 함수, 관측 처리, 리셋 조건 등을 직접 구현합니다. 이 접근 방식은 envs.DirectRLEnv 또는 envs.DirectMARLEnv를 상속하여 사용하며, Manager 클래스를 사용하지 않고 전체 환경 로직을 직접 제어할 수 있습니다.
+
+**장점:**
+  - 환경 로직에 대한 완전한 제어가 가능하여 복잡한 로직 구현에 적합합니다.
+  - PyTorch JIT 또는 Warp와 같은 최적화 기법을 활용하여 성능을 향상시킬 수 있습니다.
+  - IsaacGymEnvs 또는 OmniIsaacGymEnvs에서 마이그레이션하는 사용자에게 친숙한 구조입니다.
+
+**단점:**
+
+ - 구현의 재사용성과 모듈화가 제한적일 수 있습니다.
+ - 구성 요소의 교체나 확장이 Manager 기반 워크플로우에 비해 어렵습니다.
+ 
+
+Direct로 작성된 reward함수는 다음과 같습니다. 
+ 
+```python
+@torch.jit.script
+def compute_rewards(
+    rew_scale_alive: float,
+    rew_scale_terminated: float,
+    rew_scale_pole_pos: float,
+    rew_scale_cart_vel: float,
+    rew_scale_pole_vel: float,
+    pole_pos: torch.Tensor,
+    pole_vel: torch.Tensor,
+    cart_pos: torch.Tensor,
+    cart_vel: torch.Tensor,
+    reset_terminated: torch.Tensor,
+):
+    rew_alive = rew_scale_alive * (1.0 - reset_terminated.float())
+    rew_termination = rew_scale_terminated * reset_terminated.float()
+    rew_pole_pos = rew_scale_pole_pos * torch.sum(torch.square(pole_pos).unsqueeze(dim=1), dim=-1)
+    rew_cart_vel = rew_scale_cart_vel * torch.sum(torch.abs(cart_vel).unsqueeze(dim=1), dim=-1)
+    rew_pole_vel = rew_scale_pole_vel * torch.sum(torch.abs(pole_vel).unsqueeze(dim=1), dim=-1)
+    total_reward = rew_alive + rew_termination + rew_pole_pos + rew_cart_vel + rew_pole_vel
+    return total_reward
+```
+
 ## Example
 
 ### Direct task
