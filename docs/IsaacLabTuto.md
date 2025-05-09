@@ -131,6 +131,13 @@ python scripts/random_agent.py --task=<Task-Name>
 
 ### Task design
 
+Isaac Lab에서의 Task는 특정 에이전트(로봇)에 대한 관측(observations)과 행동(actions)을 정의하는 환경(environment)으로 구성됩니다. 이러한 환경은 에이전트에게 현재 상태를 제공하고, 에이전트의 행동을 시뮬레이션을 통해 실행합니다. Isaac Lab은 이러한 Task를 설계하기 위한 두 가지 주요 워크플로우를 제공합니다:
+
+#### Manager 기반 워크플로우
+
+![steps screenshot](assets/img/direct-based-light.svg)
+
+Manager 기반 환경은 Task를 여러 개의 독립적인 구성 요소(Managers)로 분해하여 모듈화된 구현을 촉진합니다. 각 Manager는 보상 계산, 관측 처리, 행동 적용, 무작위화 등 특정 기능을 담당하며, 사용자는 각 Manager에 대한 구성 클래스를 정의합니다. 이러한 Managers는 envs.ManagerBasedEnv를 상속하는 환경 클래스에 의해 조정되며, 다양한 구성을 쉽게 교체하거나 확장할 수 있습니다.
 ## Example
 
 ### Direct task
