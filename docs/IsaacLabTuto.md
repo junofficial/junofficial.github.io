@@ -235,6 +235,23 @@ Direct 방식에서는 관측, 보상, 초기화 같은 환경의 동작을 사�
 
 ### Direct task
 
+예제에서 제공된 CartpoleEnv 클래스는 Direct 방식으로 작성된 환경입니다.
+주요 구조는 다음과 같습니다:
+
+ - __init__(): 로봇의 관절 인덱스와 상태 버퍼를 설정합니다.
+ - _setup_scene(): 로봇과 바닥, 조명을 씬에 배치하고 물리 복제를 설정합니다.
+
+ - _pre_physics_step()과 _apply_action(): 행동 벡터를 받아 실제 물리 시뮬레이션에 적용합니다.
+
+ - _get_observations(): 현재 관절 상태로부터 관측 벡터를 구성합니다.
+
+ - _get_rewards(): 지정된 조건에 따라 보상을 계산합니다.
+
+ - _get_dones(): 카트나 막대의 상태가 유효 범위를 넘었는지 확인하여 종료 조건을 반환합니다.
+
+ - _reset_idx(): 초기 상태를 무작위로 샘플링하여 재설정합니다.
+
+
 ```python
 @configclass
 class CartpoleEnvCfg(DirectRLEnvCfg):
