@@ -6,7 +6,10 @@ nav_order: 1
 
 # Isaac Lab Tutorial
 
-![steps screenshot](assets/img/스크린캐스트 05-02-2025 05:30:24 PM.webm)
+<video width="640" height="360" controls>
+  <source src="assets/img/스크린캐스트 05-02-2025 05:30:24 PM.webm" type="video/webm">
+  Your browser does not support the video tag.
+</video>
 
 Isaac Lab 튜토리얼에 오신 것을 환영합니다!
 
