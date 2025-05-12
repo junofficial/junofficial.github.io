@@ -6,6 +6,8 @@ nav_order: 1
 
 # Isaac Lab Tutorial
 
+![steps screenshot](assets/img/스크린캐스트 05-02-2025 05:30:24 PM.webm)
+
 Isaac Lab 튜토리얼에 오신 것을 환영합니다!
 
 이 문서는 Isaac Lab을 보다 빠르고 쉽게 시작할 수 있도록 제작되었습니다. Isaac Lab 사용이 처음이신 분들을 위해 설치 및 실행에 필요한 단계들을 정리해 놓았으며 quadcopter 예제를 직접 실행하는 것 까지 문서를 정리해 두었습니다.
@@ -249,7 +251,7 @@ Direct 방식에서는 관측, 보상, 초기화 같은 환경의 동작을 사�
 
 **class CartpoleEnvCfg**
 
-이 클래스는 환경의 동작 주기, 시뮬레이션 설정, 로봇 정보, 보상 관련 스케일 등을 정의합니다.
+이 클래스는 configuration 클래스로 환경의 동작 주기, 시뮬레이션 설정, 로봇 정보, 보상 관련 스케일 등을 정의합니다.
 
 ```python
 @configclass
