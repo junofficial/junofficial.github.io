@@ -323,7 +323,9 @@ class CartpoleEnv(DirectRLEnv):
         self.cartpole.set_joint_effort_target(self.actions, joint_ids=self._cart_dof_idx)
 ```
 
+**_get_observations(...)**
 
+이 함수는 에이전트의 현재 관측값을 받아오는 함수입니다. Obs의 경우 cartpole에서는 pole의 속도와 각도, 카드의 위치와 속도를 obs로 결합하여 사용합니다.
         
 ```python
     def _get_observations(self) -> dict:
@@ -340,6 +342,11 @@ class CartpoleEnv(DirectRLEnv):
         observations = {"policy": obs}
         return observations
 ```
+
+**_get_rewards(...)**
+
+이 함수는 현재 상태에서의 보상을 계산하는 함수입니다. 보상항목은 생존 보상, 종료 패널티, 막대의 수직도, 카드 속도, 막대 각속도 등으로 구성되어 있으며 self.cfg는 초기에 CarpoleEnvCfg에서 설정한 reward scales와 보상을 계산하기 위한 현재 agent의 상태들을 compute_rewards에서 계산하게 됩니다.
+
 
 ```python
     def _get_rewards(self) -> torch.Tensor:
@@ -358,6 +365,23 @@ class CartpoleEnv(DirectRLEnv):
         )
         return total_reward
 ```
+
+**compute_rewards(...)**
+
+compute rewards에서 보상은 다음과 같이 계산됩니다.
+
+ - R = R_alive + R_termination + R_pole_pos + R_cart_vel + R_pole_vel
+ - R_alive = w_alive × (1 - d)
+ - R_termination = w_termination × d
+ - R_pole_pos = w_pole_pos × sum(p_i^2)
+ - R_cart_vel = w_cart_vel × sum(|v_cart_i|)
+ - R_pole_vel = w_pole_vel × sum(|v_pole_i|)
+
+여기서,
+ - d는 에피소드 종료 여부 (종료: 1, 생존: 0)
+ - p_i는 막대의 관절 위치(각도)
+ - v_cart_i, v_pole_i는 각각 카트와 폴의 관절 속도
+ - w_*는 각 보상 항목에 대한 스케일 값입니다 (rew_scale_*)
 
 ```python
 @torch.jit.script
