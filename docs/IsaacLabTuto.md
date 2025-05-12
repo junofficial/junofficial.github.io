@@ -137,17 +137,17 @@ Isaac Lab에서의 Task는 특정 에이전트(로봇)에 대한 관측(observat
 
 ![steps screenshot](assets/img/manager-based-light.svg)
 
-Manager 기반 환경은 Task를 여러 개의 독립적인 구성 요소(Managers)로 분해하여 모듈화된 구현을 촉진합니다. 각 Manager는 보상 계산, 관측 처리, 행동 적용, 무작위화 등 특정 기능을 담당하며, 사용자는 각 Manager에 대한 구성 클래스를 정의합니다. 이러한 Managers는 envs.ManagerBasedEnv를 상속하는 환경 클래스에 의해 조정되며, 다양한 구성을 쉽게 교체하거나 확장할 수 있습니다.
+Manager 기반 환경은 Task를 여러 개의 독립적인 구성 요소(Managers)로 분해하여 모듈화된 구현을 지원합니다. 각 Manager는 보상 계산, 관측 처리, 행동 적용, 무작위화 등 특정 기능을 담당하며, 사용자는 각 Manager에 대한 구성 클래스를 정의합니다. 이러한 Managers는 envs.ManagerBasedEnv를 상속하는 환경 클래스에 의해 조정되며, 다양한 구성을 쉽게 교체하거나 확장할 수 있습니다.
 
 **장점:**
-  - 모듈화된 설계로 구성 요소의 재사용성과 유지보수성이 높습니다.
-  - 다양한 구성을 실험하고 프로토타이핑하기에 용이합니다.
-  - 협업 시 각 구성 요소를 독립적으로 개발하고 통합할 수 있습니다.
+  - 모듈화된 설계로 구성 요소의 재사용 및 유지보수에 유리
+  - 다양한 구성을 실험하고 검증하는데 유리
+  - 협업 시 각 구성 요소를 독립적으로 개발하고 통합할 수 있음
 
 **단점:**
 
- - 구현의 복잡성이 증가할 수 있으며, 각 Manager 간의 상호작용을 명확히 이해해야 합니다.
- - 세밀한 제어가 필요한 경우에는 제한적일 수 있습니다.
+ - 구현의 복잡성이 증가할 수 있으며, 각 Manager 간의 상호작용을 명확히 이해해야 사용 가능
+ - 세밀한 제어가 필요한 경우에는 Direct에 비해 제한적
 
 Manager-based로 작성된 reward함수는 다음과 같습니다.
 
@@ -187,14 +187,14 @@ class RewardsCfg:
 Direct 워크플로우는 전통적인 환경 구현 방식과 유사하게, 단일 클래스에서 보상 함수, 관측 처리, 리셋 조건 등을 직접 구현합니다. 이 접근 방식은 envs.DirectRLEnv 또는 envs.DirectMARLEnv를 상속하여 사용하며, Manager 클래스를 사용하지 않고 전체 환경 로직을 직접 제어할 수 있습니다.
 
 **장점:**
-  - 환경 로직에 대한 완전한 제어가 가능하여 복잡한 로직 구현에 적합합니다.
-  - PyTorch JIT 또는 Warp와 같은 최적화 기법을 활용하여 성능을 향상시킬 수 있습니다.
-  - IsaacGymEnvs 또는 OmniIsaacGymEnvs에서 마이그레이션하는 사용자에게 친숙한 구조입니다.
+  - 환경 로직에 대한 완전한 제어가 가능하여 복잡한 로직 구현에 적합
+  - PyTorch JIT 또는 Warp와 같은 최적화 기법을 활용하여 성능을 향상시킬 수 있음
+  - IsaacGymEnvs 또는 OmniIsaacGymEnvs에서 마이그레이션하는 사용자에게 친숙한 구조
 
 **단점:**
 
- - 구현의 재사용성과 모듈화가 제한적일 수 있습니다.
- - 구성 요소의 교체나 확장이 Manager 기반 워크플로우에 비해 어렵습니다.
+ - 구현의 재사용성과 모듈화가 제한적
+ - 구성 요소의 교체나 확장이 Manager 기반 워크플로우에 비해 어려움
  
 
 Direct로 작성된 reward함수는 다음과 같습니다. 
@@ -224,15 +224,354 @@ def compute_rewards(
 
 ## Example
 
+다음은 실제 예제를 통해서 Direct와 Manager-based의 차이를 알아보도록 하겠습니다.Direct 방식은 하나의 클래스 내에서 환경의 모든 구성 요소—보상 함수, 관측, 초기화, 종료 조건, 행동 적용 등을—직접 구현하는 방식입니다. 반면 Manager 기반 방식은 이러한 구성 요소를 각각의 모듈로 분리하여 구성하며, 재사용성과 구성 변경의 유연성에 초점을 맞춥니다.
+
+Direct 방식에서는 관측, 보상, 초기화 같은 환경의 동작을 사용자가 직접 함수로 만들어야 합니다. 예를 들어, 관측을 계산하는 함수(_get_observations)나 보상을 계산하는 함수(_get_rewards)를 직접 작성해서 환경 클래스에 넣어야 합니다. 
+
+반면 Manager-based 방식은 ObservationsCfg, RewardsCfg, EventCfg, TerminationsCfg 등의 구성 클래스를 조합하여 환경을 정의합니다. 각 Manager는 특정 역할만을 수행하며, 서로 독립적으로 개발하고 수정할 수 있습니다. 이는 실험 구성을 빠르게 변경하거나 여러 task 간 공통 로직을 재사용할 수 있다는 장점이 있습니다.
+
+이제 두 방식 각각의 코드 예제와 그 구성 요소를 살펴보며, 어떤 방식이 사용자의 프로젝트에 더 적합할지 판단해보시기 바랍니다.
+
+
 ### Direct task
+
+```python
+@configclass
+class CartpoleEnvCfg(DirectRLEnvCfg):
+    # 환경에 대한 설정 클래스
+    decimation = 2                          # 시뮬레이션 스텝 중 몇 번에 한 번 행동 적용할지 결정
+    episode_length_s = 5.0                  # 한 에피소드의 최대 길이 (초 단위)
+    action_scale = 100.0                    # 행동 값에 곱해지는 스케일
+    action_space = 1                        # 행동 공간의 크기
+    observation_space = 4                   # 관측 벡터의 길이
+    state_space = 0                         # 사용하지 않음
+
+    sim: SimulationCfg = SimulationCfg(dt=1 / 120, render_interval=decimation)
+
+    robot_cfg: ArticulationCfg = CARTPOLE_CFG.replace(prim_path="/World/envs/env_.*/Robot")
+    cart_dof_name = "slider_to_cart"        # 카트 관절 이름
+    pole_dof_name = "cart_to_pole"          # 폴 관절 이름
+
+    scene: InteractiveSceneCfg = InteractiveSceneCfg(
+        num_envs=4096, env_spacing=4.0, replicate_physics=True
+    )
+
+    max_cart_pos = 3.0                      # 카트가 벗어나면 에피소드 종료
+    initial_pole_angle_range = [-0.25, 0.25]  # 폴 초기 각도 범위
+
+    # 보상 함수 항목별 스케일
+    rew_scale_alive = 1.0
+    rew_scale_terminated = -2.0
+    rew_scale_pole_pos = -1.0
+    rew_scale_cart_vel = -0.01
+    rew_scale_pole_vel = -0.005
+```
+**__init__(...)**
+이 함수는 환경 인스턴스를 초기화하는 생성자입니다.
+주어진 설정(config)을 바탕으로 환경 기본 요소들을 구성하며, 로봇 아티큘레이션에서 카트와 폴의 관절 이름에 해당하는 인덱스를 찾아 저장합니다.
+
+```python
+class CartpoleEnv(DirectRLEnv):
+    # 환경 클래스 정의
+    cfg: CartpoleEnvCfg
+
+    def __init__(self, cfg: CartpoleEnvCfg, render_mode: str | None = None, **kwargs):
+        super().__init__(cfg, render_mode, **kwargs)
+
+        # 관절 인덱스를 찾고 저장
+        self._cart_dof_idx, _ = self.cartpole.find_joints(self.cfg.cart_dof_name)
+        self._pole_dof_idx, _ = self.cartpole.find_joints(self.cfg.pole_dof_name)
+
+        self.action_scale = self.cfg.action_scale
+        self.joint_pos = self.cartpole.data.joint_pos
+        self.joint_vel = self.cartpole.data.joint_vel
+```
+
+**_setup_scene(...)**
+이 함수는 시뮬레이션 내에 로봇과 환경 요소를 배치하는 역할을 합니다.
+로봇 아티큘레이션을 생성하고, 지면 평면을 추가하며, 여러 환경 인스턴스를 클론하여 배치합니다.
+이 과정에서 각 환경은 물리적으로 분리되어 있으며, 복수의 학습 환경을 병렬로 시뮬레이션할 수 있도록 구성됩니다.
+
+**_pre_physics_step(...)**
+이 함수는 물리 시뮬레이션이 실행되기 전 호출되어 policy로 부터 받은 action을 물리적으로 적용시키기 위해서 스케일링 등과 같이 조정되는 단계입니다.
+
+**_apply_action(...)**
+이 함수는 _pre_physics_step(...)에서 조정된 action값을 실제 시뮬레이션에 적용하는 단계입니다. 
+
+```python
+    def _setup_scene(self):
+        # 로봇 추가 및 환경 설정
+        self.cartpole = Articulation(self.cfg.robot_cfg) # 관절 요소 추가
+        spawn_ground_plane(prim_path="/World/ground", cfg=GroundPlaneCfg()) # 지면 추가
+        self.scene.clone_environments(copy_from_source=False) # Scene에 환경 복제(병렬화)
+        self.scene.articulations["cartpole"] = self.cartpole # Scene에 등록
+
+        # 조명 추가
+        light_cfg = sim_utils.DomeLightCfg(intensity=2000.0, color=(0.75, 0.75, 0.75))
+        light_cfg.func("/World/Light", light_cfg)
+        
+    def _pre_physics_step(self, actions: torch.Tensor) -> None:
+        # 물리 엔진에 전달하기 전에 행동 스케일링
+        self.actions = self.action_scale * actions.clone()
+
+    def _apply_action(self) -> None:
+        # 행동을 카트에 힘으로 적용
+        self.cartpole.set_joint_effort_target(self.actions, joint_ids=self._cart_dof_idx)
+```
+
+
+        
+```python
+    def _get_observations(self) -> dict:
+        # 관측 벡터를 구성하여 반환
+        obs = torch.cat(
+            (
+                self.joint_pos[:, self._pole_dof_idx[0]].unsqueeze(1),
+                self.joint_vel[:, self._pole_dof_idx[0]].unsqueeze(1),
+                self.joint_pos[:, self._cart_dof_idx[0]].unsqueeze(1),
+                self.joint_vel[:, self._cart_dof_idx[0]].unsqueeze(1),
+            ),
+            dim=-1,
+        )
+        observations = {"policy": obs}
+        return observations
+```
+
+```python
+    def _get_rewards(self) -> torch.Tensor:
+        # 보상 함수 계산
+        total_reward = compute_rewards(
+            self.cfg.rew_scale_alive,
+            self.cfg.rew_scale_terminated,
+            self.cfg.rew_scale_pole_pos,
+            self.cfg.rew_scale_cart_vel,
+            self.cfg.rew_scale_pole_vel,
+            self.joint_pos[:, self._pole_dof_idx[0]],
+            self.joint_vel[:, self._pole_dof_idx[0]],
+            self.joint_pos[:, self._cart_dof_idx[0]],
+            self.joint_vel[:, self._cart_dof_idx[0]],
+            self.reset_terminated,
+        )
+        return total_reward
+```
+
+```python
+@torch.jit.script
+def compute_rewards(
+    # 각 보상 항목 계산 및 총합
+    rew_scale_alive: float,
+    rew_scale_terminated: float,
+    rew_scale_pole_pos: float,
+    rew_scale_cart_vel: float,
+    rew_scale_pole_vel: float,
+    pole_pos: torch.Tensor,
+    pole_vel: torch.Tensor,
+    cart_pos: torch.Tensor,
+    cart_vel: torch.Tensor,
+    reset_terminated: torch.Tensor,
+):
+    rew_alive = rew_scale_alive * (1.0 - reset_terminated.float())
+    rew_termination = rew_scale_terminated * reset_terminated.float()
+    rew_pole_pos = rew_scale_pole_pos * torch.sum(torch.square(pole_pos).unsqueeze(dim=1), dim=-1)
+    rew_cart_vel = rew_scale_cart_vel * torch.sum(torch.abs(cart_vel).unsqueeze(dim=1), dim=-1)
+    rew_pole_vel = rew_scale_pole_vel * torch.sum(torch.abs(pole_vel).unsqueeze(dim=1), dim=-1)
+    total_reward = rew_alive + rew_termination + rew_pole_pos + rew_cart_vel + rew_pole_vel
+    return total_reward
+```
+
+```python
+    def _get_dones(self) -> tuple[torch.Tensor, torch.Tensor]:
+        # 종료 조건 평가 (시간 초과 또는 위치 초과)
+        self.joint_pos = self.cartpole.data.joint_pos
+        self.joint_vel = self.cartpole.data.joint_vel
+
+        time_out = self.episode_length_buf >= self.max_episode_length - 1
+        out_of_bounds = torch.any(torch.abs(self.joint_pos[:, self._cart_dof_idx]) > self.cfg.max_cart_pos, dim=1)
+        out_of_bounds = out_of_bounds | torch.any(torch.abs(self.joint_pos[:, self._pole_dof_idx]) > math.pi / 2, dim=1)
+        return out_of_bounds, time_out
+```
+
+```python
+    def _reset_idx(self, env_ids: Sequence[int] | None):
+        # 선택된 환경 인덱스를 초기화
+        if env_ids is None:
+            env_ids = self.cartpole._ALL_INDICES
+        super()._reset_idx(env_ids)
+
+        joint_pos = self.cartpole.data.default_joint_pos[env_ids]
+        joint_pos[:, self._pole_dof_idx] += sample_uniform(
+            self.cfg.initial_pole_angle_range[0] * math.pi,
+            self.cfg.initial_pole_angle_range[1] * math.pi,
+            joint_pos[:, self._pole_dof_idx].shape,
+            joint_pos.device,
+        )
+        joint_vel = self.cartpole.data.default_joint_vel[env_ids]
+
+        default_root_state = self.cartpole.data.default_root_state[env_ids]
+        default_root_state[:, :3] += self.scene.env_origins[env_ids]
+
+        self.joint_pos[env_ids] = joint_pos
+        self.joint_vel[env_ids] = joint_vel
+
+        self.cartpole.write_root_pose_to_sim(default_root_state[:, :7], env_ids)
+        self.cartpole.write_root_velocity_to_sim(default_root_state[:, 7:], env_ids)
+        self.cartpole.write_joint_state_to_sim(joint_pos, joint_vel, None, env_ids)
+```
+
 
 ### Manager-based task
 
+```python
+class CartpoleSceneCfg(InteractiveSceneCfg):
+    """Configuration for a cart-pole scene."""
+
+    # ground plane
+    ground = AssetBaseCfg(
+        prim_path="/World/ground",
+        spawn=sim_utils.GroundPlaneCfg(size=(100.0, 100.0)),
+    )
+
+    # cartpole
+    robot: ArticulationCfg = CARTPOLE_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+
+    # lights
+    dome_light = AssetBaseCfg(
+        prim_path="/World/DomeLight",
+        spawn=sim_utils.DomeLightCfg(color=(0.9, 0.9, 0.9), intensity=500.0),
+    )
+```
+
+```python
+@configclass
+class ActionsCfg:
+    """Action specifications for the MDP."""
+
+    joint_effort = mdp.JointEffortActionCfg(asset_name="robot", joint_names=["slider_to_cart"], scale=100.0)
+```
+
+```python
+class ObservationsCfg:
+    """Observation specifications for the MDP."""
+
+    @configclass
+    class PolicyCfg(ObsGroup):
+        """Observations for policy group."""
+
+        # observation terms (order preserved)
+        joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
+        joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
+
+        def __post_init__(self) -> None:
+            self.enable_corruption = False
+            self.concatenate_terms = True
+
+    # observation groups
+    policy: PolicyCfg = PolicyCfg()
+```
+
+```python
+@configclass
+class EventCfg:
+    """Configuration for events."""
+
+    # reset
+    reset_cart_position = EventTerm(
+        func=mdp.reset_joints_by_offset,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("robot", joint_names=["slider_to_cart"]),
+            "position_range": (-1.0, 1.0),
+            "velocity_range": (-0.5, 0.5),
+        },
+    )
+
+    reset_pole_position = EventTerm(
+        func=mdp.reset_joints_by_offset,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("robot", joint_names=["cart_to_pole"]),
+            "position_range": (-0.25 * math.pi, 0.25 * math.pi),
+            "velocity_range": (-0.25 * math.pi, 0.25 * math.pi),
+        },
+    )
+```
+
+```python
+@configclass
+class RewardsCfg:
+    """Reward terms for the MDP."""
+
+    # (1) Constant running reward
+    alive = RewTerm(func=mdp.is_alive, weight=1.0)
+    # (2) Failure penalty
+    terminating = RewTerm(func=mdp.is_terminated, weight=-2.0)
+    # (3) Primary task: keep pole upright
+    pole_pos = RewTerm(
+        func=mdp.joint_pos_target_l2,
+        weight=-1.0,
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["cart_to_pole"]), "target": 0.0},
+    )
+    # (4) Shaping tasks: lower cart velocity
+    cart_vel = RewTerm(
+        func=mdp.joint_vel_l1,
+        weight=-0.01,
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["slider_to_cart"])},
+    )
+    # (5) Shaping tasks: lower pole angular velocity
+    pole_vel = RewTerm(
+        func=mdp.joint_vel_l1,
+        weight=-0.005,
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["cart_to_pole"])},
+    )
+```
+
+```python
+@configclass
+class TerminationsCfg:
+    """Termination terms for the MDP."""
+
+    # (1) Time out
+    time_out = DoneTerm(func=mdp.time_out, time_out=True)
+    # (2) Cart out of bounds
+    cart_out_of_bounds = DoneTerm(
+        func=mdp.joint_pos_out_of_manual_limit,
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["slider_to_cart"]), "bounds": (-3.0, 3.0)},
+    )
+```
+
+```python
+@configclass
+class CartpoleEnvCfg(ManagerBasedRLEnvCfg):
+    """Configuration for the cartpole environment."""
+
+    # Scene settings
+    scene: CartpoleSceneCfg = CartpoleSceneCfg(num_envs=4096, env_spacing=4.0)
+    # Basic settings
+    observations: ObservationsCfg = ObservationsCfg()
+    actions: ActionsCfg = ActionsCfg()
+    events: EventCfg = EventCfg()
+    # MDP settings
+    rewards: RewardsCfg = RewardsCfg()
+    terminations: TerminationsCfg = TerminationsCfg()
+
+    # Post initialization
+    def __post_init__(self) -> None:
+        """Post initialization."""
+        # general settings
+        self.decimation = 2
+        self.episode_length_s = 5
+        # viewer settings
+        self.viewer.eye = (8.0, 0.0, 5.0)
+        # simulation settings
+        self.sim.dt = 1 / 120
+        self.sim.render_interval = self.decimation
+```
 ## TIPS
 
 ### Urdf to usd
 
 ### Creating new env
+
 
 
 
