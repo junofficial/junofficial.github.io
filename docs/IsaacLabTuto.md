@@ -109,11 +109,10 @@ python scripts/tutorials/00_sim/create_empty.py
 
 Isaac Lab을 활용하기 위해서는 프로젝트의 폴더 구조를 이해하는 것이 중요합니다. 주요 디렉토리와 그 역할은 다음과 같습니다:
 
-
-IsaacLab
+IsaacLab  
 ├── isaaclab.sh                     # Isaac Lab을 실행하거나 설정할 수 있는 주요 실행 스크립트  
 ├── source                          # 핵심 소스 코드들이 모여 있는 디렉토리  
-│   ├── isaaclab                    # Isaac Lab의 주요 기능과 환경을 정의하는 기본 모듈로 액추에이터, 객체, 로봇 및 센서 등의 핵심 인터페이스들이 정의  
+│   ├── isaaclab                    # Isaac Lab의 주요 기능과 환경을 정의하는 기본 모듈
 │   ├── isaaclab_assets             # 로봇, 지형 등에서 사용되는 에셋(asset) 관련 정의  
 │   ├── isaaclab_mimic              # 모방 학습(imitation learning) 관련 기능을 포함하는 모듈  
 │   ├── isaaclab_rl                 # 강화학습(rl) 알고리즘 및 설정이 정의된 모듈  
@@ -129,7 +128,27 @@ IsaacLab
 ├── logs                            # 학습 또는 평가 중 생성되는 로그 파일 저장 폴더  
 └── README.md                       # Isaac Lab 프로젝트 개요와 사용법이 담긴 문서  
 
+위의 폴더 구조에서 환경을 새로 만들거나 수정할 경우 source 폴더의 isaaclab 혹은 isaaclab_tasks를 가장 많이 사용하게 됩니다. isaaclab과 isaaclab_tasks의 내부를 확인해보게 된다면 다음과 같습니다.
 
+isaaclab/  
+├── actuators/      # 토크, 속도, 위치 제어 등을 담당하는 액추에이터 관련 로직 정의  
+├── app/            # Isaac Lab 실행을 위한 애플리케이션 설정 및 진입점   
+├── assets/         # 로봇, 환경, 물체 등에서 사용되는 USD 에셋 구성  
+├── controllers/    # 로봇의 행동 제어를 위한 컨트롤러(예: PD, 모션 트래킹 등) 정의  
+├── devices/        # IMU, ForceSensor 등 로봇 하드웨어 장치 모델링  
+├── envs/           # Direct 및 Manager 기반 환경 로직 정의 (강화학습 환경 포함)  
+├── managers/       # Manager 기반 환경을 구성하는 보상, 관측, 종료 조건 등의 모듈  
+├── markers/        # 디버깅 및 시각화를 위한 마커 객체 정의 (e.g., 축, 텍스트 표시 등)  
+├── scene/          # 시뮬레이션 Scene 구성 관련 유틸리티 및 객체 배치 관리  
+├── sensors/        # 카메라, 깊이 센서 등 시뮬레이션 센서 모델 정의  
+├── sim/            # 시뮬레이션 설정, 복제, 클로너 등 물리 엔진 관련 모듈  
+├── terrains/       # 지형 생성 유틸리티 및 커스텀 지형 클래스들 (e.g., rough, stairs)  
+├── ui/             # 사용자 인터페이스(UI) 및 Jupyter 위젯 연동 관련 모듈  
+├── utils/          # 공통 유틸리티 함수들 (좌표 변환, 초기화 등)  
+└── _init_.py       # Python 패키지로 인식되기 위한 초기화 파일  
+
+
+isaaclab_tasks의 경우에는 direct와 manager-based로 나뉘어 있으며 필요에 따라 원하는 환경을 들어가 확인해보시면 될 것 같습니다.
 
 ### Available environments
 
