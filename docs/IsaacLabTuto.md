@@ -109,6 +109,7 @@ python scripts/tutorials/00_sim/create_empty.py
 
 Isaac Lab을 활용하기 위해서는 프로젝트의 폴더 구조를 이해하는 것이 중요합니다. 주요 디렉토리와 그 역할은 다음과 같습니다:
 
+<pre>
 IsaacLab  
 ├── isaaclab.sh                     # Isaac Lab을 실행 및 설정할 수 있는 주요 스크립트 모음  
 ├── source                          # 핵심 소스 코드들이 모여 있는 디렉토리  
@@ -127,6 +128,7 @@ IsaacLab
 │   └── tutorials                   # 튜토리얼 예제 코드가 위치한 디렉토리  
 ├── logs                            # 학습 또는 평가 중 생성되는 로그 파일 저장 폴더  
 └── README.md                       # Isaac Lab 프로젝트 개요와 사용법이 담긴 문서  
+</pre>
 
 위의 폴더 구조에서 환경을 새로 만들거나 수정할 경우 source 폴더의 isaaclab 혹은 isaaclab_tasks를 가장 많이 사용하게 됩니다. isaaclab과 isaaclab_tasks의 내부를 확인해보게 된다면 다음과 같습니다.
 
@@ -146,7 +148,7 @@ isaaclab/
 ├── terrains/       # 지형 생성 유틸리티 및 커스텀 지형 클래스들 (e.g., rough, stairs)  
 ├── ui/             # 사용자 인터페이스(UI) 및 Jupyter 위젯 연동 관련 모듈  
 ├── utils/          # 공통 유틸리티 함수들 (좌표 변환, 초기화 등)  
-└── _init_.py       # Python 패키지로 인식되기 위한 초기화 파일  
+└── __init__.py       # Python 패키지로 인식되기 위한 초기화 파일  
 </pre>
 
 
@@ -294,6 +296,7 @@ Direct 방식에서는 관측, 보상, 초기화 같은 환경의 동작을 사�
 
 주요 구조는 다음과 같습니다:
 
+<pre>
  - __init__(): 로봇의 관절 인덱스와 상태 버퍼를 설정합니다.
  - _setup_scene(): 로봇과 바닥, 조명을 씬에 배치하고 물리 복제를 설정합니다.
  - _pre_physics_step()과 _apply_action(): 행동 벡터를 받아 실제 물리 시뮬레이션에 적용합니다.
@@ -301,6 +304,7 @@ Direct 방식에서는 관측, 보상, 초기화 같은 환경의 동작을 사�
  - _get_rewards(): 지정된 조건에 따라 보상을 계산합니다.
  - _get_dones(): 카트나 막대의 상태가 유효 범위를 넘었는지 확인하여 종료 조건을 반환합니다.
  - _reset_idx(): 초기 상태를 무작위로 샘플링하여 재설정합니다.
+</pre>
 
 **class CartpoleEnvCfg**
 
