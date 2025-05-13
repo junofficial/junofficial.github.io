@@ -482,33 +482,60 @@ def compute_rewards(
 
 ### Manager-based task
 
+이번 예제는 Cartpole task를 manager-based 방식으로 작성한 환경입니다. Manager-based task는 Isaac Lab에서 제공하는 환경 모듈화 방식을 따릅니다. 각 기능(보상, 관측, 초기화, 종료 조건 등)을 독립적인 Manager 클래스로 나누고, 이들을 하나의 설정(Config class)으로 통합합니다. 구성 요소 간 의존성이 줄어들기 때문에 복잡한 시나리오나 다수의 환경을 동시에 개발하고자 할 때 유리한 구조입니다.
+
+주요 구조는 다음과 같습니다:
+
+ - CartpoleSceneCfg: 환경 내 지형, 조명, 로봇을 정의합니다.
+ - ActionsCfg: 어떤 방식으로 행동을 적용할지 설정합니다.
+ - ObservationsCfg: 어떤 관측값을 policy에 전달할지 정의합니다.
+ - EventCfg: 리셋 시 어떤 초기화를 적용할지 설정합니다.
+ - RewardsCfg: 보상을 구성하는 항목과 스케일을 정의합니다.
+ - TerminationsCfg: 종료 조건들을 정의합니다.
+
+이러한 구성들은 ManagerBasedRLEnvCfg를 상속한 환경 설정 클래스(CartpoleEnvCfg)에서 모두 통합되며, 실행 시 ManagerBasedEnv가 이 구성들을 읽어 전체 시뮬레이션 루프를 관리합니다.
+
+**CartpoleSceneCfg**
+
+이 클래스는 시뮬레이션 내의 물리적 배치를 정의합니다. 지면(ground), 로봇(robot), 조명(light)을 설정합니다.
+
+
 ```python
 class CartpoleSceneCfg(InteractiveSceneCfg):
     """Configuration for a cart-pole scene."""
 
-    # ground plane
+    # 지면 설정: 넓은 평면을 생성
     ground = AssetBaseCfg(
         prim_path="/World/ground",
         spawn=sim_utils.GroundPlaneCfg(size=(100.0, 100.0)),
     )
 
-    # cartpole
+    # 카트폴 로봇 설정: 환경별로 prim_path 지정
     robot: ArticulationCfg = CARTPOLE_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
-    # lights
+    # 돔 라이트 설정: 밝기와 색 지정
     dome_light = AssetBaseCfg(
         prim_path="/World/DomeLight",
         spawn=sim_utils.DomeLightCfg(color=(0.9, 0.9, 0.9), intensity=500.0),
     )
 ```
 
+**ActionsCfg**
+
+이 클래스는 joint_effort를 통해 카트에 직접적인 힘을 가합니다.
+
 ```python
 @configclass
 class ActionsCfg:
     """Action specifications for the MDP."""
 
+    # 카트 관절에 joint effort 방식의 제어 적용 (힘 기반 제어)
     joint_effort = mdp.JointEffortActionCfg(asset_name="robot", joint_names=["slider_to_cart"], scale=100.0)
 ```
+
+**ObservationsCfg**
+
+이 클래스에서는 정책에 입력되는 obs 구성을 정의하는 PolicyCfg로 이루어져 있으며 관절 위치 및 속도를 상대적인 값으로 policy에 전달하게 됩니다.
 
 ```python
 class ObservationsCfg:
@@ -518,24 +545,29 @@ class ObservationsCfg:
     class PolicyCfg(ObsGroup):
         """Observations for policy group."""
 
-        # observation terms (order preserved)
+        # 상대 관절 위치와 속도를 관측값으로 사용
         joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
         joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
 
         def __post_init__(self) -> None:
+            # 관측값 손상 비활성화 및 항목 결합 설정
             self.enable_corruption = False
             self.concatenate_terms = True
 
-    # observation groups
+    # policy라는 이름의 관측 그룹으로 지정
     policy: PolicyCfg = PolicyCfg()
 ```
+
+**EventCfg**
+
+이 클래스는 이벤트를 정의하는 클래스로 현 task에서는 카트 및 폴의 위치와 속도를 일정 범위에서 무작위로 초기화합니다.
 
 ```python
 @configclass
 class EventCfg:
     """Configuration for events."""
 
-    # reset
+    # 카트 관절 초기화: 위치와 속도 범위 내 무작위 샘플링
     reset_cart_position = EventTerm(
         func=mdp.reset_joints_by_offset,
         mode="reset",
@@ -546,6 +578,7 @@ class EventCfg:
         },
     )
 
+    # 폴 관절 초기화: 각도 및 각속도 범위 내 무작위 샘플링
     reset_pole_position = EventTerm(
         func=mdp.reset_joints_by_offset,
         mode="reset",
@@ -557,75 +590,113 @@ class EventCfg:
     )
 ```
 
+**RewardsCfg**
+
+보상 함수는 다음과 같은 총합으로 구성됩니다:
+
+R = R_alive + R_termination + R_pole_pos + R_cart_vel + R_pole_vel
+
+각 항목은 다음과 같이 정의됩니다:
+
+- 생존 보상 (계속 살아있을 경우 1점 부여):  
+  R_alive = w_alive × (1 - d)  
+  - d: 종료 여부 (종료 시 d = 1, 생존 시 d = 0)  
+  - w_alive = 1.0
+
+- 종료 페널티 (에피소드가 끝나면 벌점):  
+  R_termination = w_termination × d  
+  - w_termination = -2.0
+
+- 폴 각도 오차 보상 (막대를 수직으로 유지):  
+  R_pole_pos = w_pole_pos × ||θ_pole - θ_target||²  
+  - θ_target = 0 (직립 상태)  
+  - w_pole_pos = -1.0
+
+- 카트 속도 줄이기 보상:  
+  R_cart_vel = w_cart_vel × ||v_cart||₁  
+  - w_cart_vel = -0.01
+
+- 폴 각속도 줄이기 보상:  
+  R_pole_vel = w_pole_vel × ||ω_pole||₁  
+  - w_pole_vel = -0.005
+
+
 ```python
 @configclass
 class RewardsCfg:
     """Reward terms for the MDP."""
 
-    # (1) Constant running reward
+    # 생존 보상: 에피소드 지속에 대해 보상
     alive = RewTerm(func=mdp.is_alive, weight=1.0)
-    # (2) Failure penalty
+    # 종료 패널티: 실패 시 페널티 부여
     terminating = RewTerm(func=mdp.is_terminated, weight=-2.0)
-    # (3) Primary task: keep pole upright
+    # 폴 각도를 수직으로 유지할수록 보상 증가
     pole_pos = RewTerm(
         func=mdp.joint_pos_target_l2,
         weight=-1.0,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=["cart_to_pole"]), "target": 0.0},
     )
-    # (4) Shaping tasks: lower cart velocity
+    # 카트 속도 최소화 보상
     cart_vel = RewTerm(
         func=mdp.joint_vel_l1,
         weight=-0.01,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["slider_to_cart"])},
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["slider_to_cart"])}
     )
-    # (5) Shaping tasks: lower pole angular velocity
+    # 폴의 각속도 최소화 보상
     pole_vel = RewTerm(
         func=mdp.joint_vel_l1,
         weight=-0.005,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["cart_to_pole"])},
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["cart_to_pole"])}
     )
 ```
+
+** TerminationsCfg **
+
+이 클래스는 종료 조건을 정의하는 클래스로 현 task에서는 시간 초과 또는 카트가 주어진 위치 범위를 벗어난 경우 종료합니다.
 
 ```python
 @configclass
 class TerminationsCfg:
     """Termination terms for the MDP."""
 
-    # (1) Time out
+    # 일정 시간 초과 시 종료
     time_out = DoneTerm(func=mdp.time_out, time_out=True)
-    # (2) Cart out of bounds
+    # 카트가 제한된 위치를 벗어날 경우 종료
     cart_out_of_bounds = DoneTerm(
         func=mdp.joint_pos_out_of_manual_limit,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=["slider_to_cart"]), "bounds": (-3.0, 3.0)},
     )
 ```
 
+**CartpoleEnvCfg**
+
+이 클래스는 위에 정의한 scene, observation, action, reward, event, termination 구성 요소를 통합하여 전체 환경 설정을 완성합니다.
+
 ```python
 @configclass
 class CartpoleEnvCfg(ManagerBasedRLEnvCfg):
     """Configuration for the cartpole environment."""
 
-    # Scene settings
+    # Scene 설정: 지형, 조명, 로봇 포함
     scene: CartpoleSceneCfg = CartpoleSceneCfg(num_envs=4096, env_spacing=4.0)
-    # Basic settings
+    # 관측 설정
     observations: ObservationsCfg = ObservationsCfg()
+    # 행동 설정
     actions: ActionsCfg = ActionsCfg()
+    # 초기화 이벤트 설정
     events: EventCfg = EventCfg()
-    # MDP settings
+    # 보상 설정
     rewards: RewardsCfg = RewardsCfg()
+    # 종료 조건 설정
     terminations: TerminationsCfg = TerminationsCfg()
 
-    # Post initialization
+    # 시뮬레이션, 렌더링, 뷰어 설정
     def __post_init__(self) -> None:
-        """Post initialization."""
-        # general settings
-        self.decimation = 2
-        self.episode_length_s = 5
-        # viewer settings
-        self.viewer.eye = (8.0, 0.0, 5.0)
-        # simulation settings
-        self.sim.dt = 1 / 120
-        self.sim.render_interval = self.decimation
+        self.decimation = 2                               # 시뮬레이션 스텝마다 행동 적용 빈도
+        self.episode_length_s = 5                         # 에피소드 길이 (초)
+        self.viewer.eye = (8.0, 0.0, 5.0)                 # 카메라 위치 설정
+        self.sim.dt = 1 / 120                             # 시뮬레이션 타임스텝
+        self.sim.render_interval = self.decimation       # 렌더링 빈도 설정
 ```
 ## TIPS
 
