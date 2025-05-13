@@ -6,8 +6,8 @@ nav_order: 1
 
 # Isaac Lab Tutorial
 
-<video width="640" height="360" controls>
-  <source src="assets/img/스크린캐스트 05-02-2025 05:30:24 PM.webm" type="video/webm">
+<video width="640" height="360" controls autoplay muted>
+  <source src="assets/video/스크린캐스트 05-02-2025 05:30:24 PM.webm" type="video/webm">
   Your browser does not support the video tag.
 </video>
 
@@ -101,6 +101,35 @@ python scripts/tutorials/00_sim/create_empty.py
 ## Things to know
 
 이 목차에서는 Isaac Lab을 사용하기 전에 알고 있으면 좋을 내용들에 대해서 정리해 놓았습니다. 실행이 우선이면 example을 통해 예제를 확인하시고 
+
+### Directory structure
+
+
+![steps screenshot](assets/img/스크린샷 2025-05-13 14-43-23.png)
+
+Isaac Lab을 활용하기 위해서는 프로젝트의 폴더 구조를 이해하는 것이 중요합니다. 주요 디렉토리와 그 역할은 다음과 같습니다:
+
+
+IsaacLab
+├── isaaclab.sh                     # Isaac Lab을 실행하거나 설정할 수 있는 주요 실행 스크립트
+├── source                          # 핵심 소스 코드들이 모여 있는 디렉토리
+│   ├── isaaclab                    # Isaac Lab의 주요 기능과 환경을 정의하는 기본 모듈로 액추에이터, 객체, 로봇 및 센서 등의 핵심 인터페이스들이 정
+│   ├── isaaclab_assets             # 로봇, 지형 등에서 사용되는 에셋(asset) 관련 정의
+│   ├── isaaclab_mimic              # 모방 학습(imitation learning) 관련 기능을 포함하는 모듈
+│   ├── isaaclab_rl                 # 강화학습(rl) 알고리즘 및 설정이 정의된 모듈
+│   └── isaaclab_tasks              # 다양한 Task 환경 정의가 들어있는 모듈 (Direct, Manager 기반 포함)
+├── scripts                         # 실행 가능한 예제 스크립트 및 실험 구성
+│   ├── benchmarks                  # 벤치마크 환경 테스트를 위한 스크립트
+│   ├── demos                       # 데모 실행을 위한 스크립트
+│   ├── environments                # 환경 목록 조회, 등록 등을 위한 유틸리티
+│   ├── imitation_learning          # imitation learning 학습 및 평가 스크립트
+│   ├── reinforcement_learning      # 강화 학습 실행을 위한 학습/평가 스크립트
+│   ├── tools                       # 데이터 처리, 시각화 등 부가적인 유틸리티 도구 모음
+│   └── tutorials                   # 튜토리얼 예제 코드가 위치한 디렉토리
+├── logs                            # 학습 또는 평가 중 생성되는 로그 파일 저장 폴더
+└── README.md                       # Isaac Lab 프로젝트 개요와 사용법이 담긴 문서
+
+
 
 ### Available environments
 
