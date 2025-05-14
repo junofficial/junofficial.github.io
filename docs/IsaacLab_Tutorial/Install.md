@@ -84,3 +84,4 @@ sudo apt install cmake build-essential
 
 ```bash
 python scripts/tutorials/00_sim/create_empty.py
+```

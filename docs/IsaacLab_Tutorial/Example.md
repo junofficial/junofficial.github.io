@@ -272,6 +272,7 @@ python scripts/reinforcement_learning/rsl_rl/train.py --task=Isaac-Cartpole-Dire
 </video>
 
 
+
 ## Manager-based task
 
 이번 예제는 Cartpole task를 manager-based 방식으로 작성한 환경입니다. Manager-based task는 Isaac Lab에서 제공하는 환경 모듈화 방식을 따릅니다. 각 기능(보상, 관측, 초기화, 종료 조건 등)을 독립적인 Manager 클래스로 나누고, 이들을 하나의 설정(Config class)으로 통합합니다. 구성 요소 간 의존성이 줄어들기 때문에 복잡한 시나리오나 다수의 환경을 동시에 개발하고자 할 때 유리한 구조입니다.
@@ -504,6 +505,7 @@ python scripts/reinforcement_learning/rsl_rl/train.py --task=Isaac-Cartpole-v0
   Your browser does not support the video tag.
 </video>
 
+
 또한 Manager-based를 실행할 경우 각 클래스 매니저에 대한 정보값이 코드를 실행할 때 보여집니다. 이는 하단에 첨부한 동영상과 같이 실행 터미널 위쪽에서 확인할 수 있습니다.
 
 <video width="640" height="360" controls>
@@ -511,10 +513,24 @@ python scripts/reinforcement_learning/rsl_rl/train.py --task=Isaac-Cartpole-v0
   Your browser does not support the video tag.
 </video>
 
+
 이는 Direct task에 비해 현재 학습 환경에 대한 정보도 얻기 좋으며 좀 더 체계적으로 학습을 진행 할 수 있습니다. 다만 이렇게 Manager-based 환경을 꾸미기 위해서 상속받은 ManagerBasedRLEnvCfg을 정확하게 이해하고 사용해야 된다는 점에서 꽤나 오랜 시간을 소요하게 되고 복잡성이 증가합니다. 
 
 
 그렇기에 새로운 환경을 처음부터 구축해 나가는 것은 Direct 환경을 추천드리고 기존에 있던 환경에 terrain을 변경하거나 command나 reward를 변경하는 등 모듈 수준에서 환경을 꾸미게 된다면 Manager-based 환경을 추천드립니다.
 
- 
+## Logs
+
+마지막으로 이렇게 학습한 결과를 확인하는 방법입니다. 예시는 Manager-based 기반으로 작성하겠습니다.
+
+학습한 모든 내용은 Isaac Lab의 처음 디렉토리인 logs에 저장되게 됩니다. 각 logs는 학습한 강화학습 프레임워크마다 저장되며 rsl_rl을 선택해서 학습했을 경우 rsl_rl의 cartpole 폴더에 저장되게 됩니다. 
+
+각 폴더에는 tensorboard의 로그파일, 학습한 모델의 weight파일, 학습환경과  agent 설정에 대한 yaml파일과 pickle파일이 존재합니다. 이렇게 저장된 내용들을 통해 사용자는 학습 로그를 확인할 수 있고 학습한 모델을 불러오거나 실행시켜볼 수 있습니다.
+
+먼저 logs에 들어있는 내용을 확인하는 동영상을 하단에 첨부하였습니다.
+
+<video width="640" height="360" controls>
+  <source src="assets/video/스크린캐스트 05-14-2025 04:41:22 PM.webm" type="video/webm">
+  Your browser does not support the video tag.
+</video>
 
