@@ -1,7 +1,7 @@
 ---
 layout: default
-title: What is All This? (FAQs)
-nav_order: 3
+title: TIPS
+nav_order: 4
 ---
 
 # What is All This? (FAQs)
