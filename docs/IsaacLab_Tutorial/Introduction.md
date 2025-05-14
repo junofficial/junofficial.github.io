@@ -4,7 +4,7 @@ title: Introduction
 nav_order: 0
 ---
 
-# Isaac Lab Tutorial
+# Introduction
 
 <video width="640" height="360" controls autoplay muted>
   <source src="assets/video/스크린캐스트 05-02-2025 04:57:48 PM.webm" type="video/webm">
