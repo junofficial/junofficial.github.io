@@ -258,6 +258,19 @@ def compute_rewards(
         self.cartpole.write_joint_state_to_sim(joint_pos, joint_vel, None, env_ids)
 ```
 
+Direct cartpole의 실행 코드는 다음과 같습니다.
+
+```bash
+python scripts/reinforcement_learning/rsl_rl/train.py --task=Isaac-Cartpole-Direct-v0
+```
+
+이 코드를 실행하는 영상을 하단에 첨부합니다.
+
+<video width="640" height="360" controls>
+  <source src="assets/video/스크린캐스트 05-14-2025 03:09:18 PM.webm" type="video/webm">
+  Your browser does not support the video tag.
+</video>
+
 
 ## Manager-based task
 
@@ -477,3 +490,31 @@ class CartpoleEnvCfg(ManagerBasedRLEnvCfg):
         self.sim.dt = 1 / 120                             # 시뮬레이션 타임스텝
         self.sim.render_interval = self.decimation       # 렌더링 빈도 설정
 ```
+
+Manager-based cartpole의 실행 코드는 다음과 같습니다.
+
+```bash
+python scripts/reinforcement_learning/rsl_rl/train.py --task=Isaac-Cartpole-v0
+```
+
+이 코드를 실행하는 영상을 하단에 첨부합니다.
+
+<video width="640" height="360" controls>
+  <source src="assets/video/스크린캐스트 05-14-2025 03:23:58 PM.webm" type="video/webm">
+  Your browser does not support the video tag.
+</video>
+
+또한 Manager-based를 실행할 경우 각 클래스 매니저에 대한 정보값이 코드를 실행할 때 보여집니다. 이는 하단에 첨부한 동영상과 같이 실행 터미널 위쪽에서 확인할 수 있습니다.
+
+<video width="640" height="360" controls>
+  <source src="assets/video/스크린캐스트 05-14-2025 03:30:46 PM.webm" type="video/webm">
+  Your browser does not support the video tag.
+</video>
+
+이는 Direct task에 비해 현재 학습 환경에 대한 정보도 얻기 좋으며 좀 더 체계적으로 학습을 진행 할 수 있습니다. 다만 이렇게 Manager-based 환경을 꾸미기 위해서 상속받은 ManagerBasedRLEnvCfg을 정확하게 이해하고 사용해야 된다는 점에서 꽤나 오랜 시간을 소요하게 되고 복잡성이 증가합니다. 
+
+
+그렇기에 새로운 환경을 처음부터 구축해 나가는 것은 Direct 환경을 추천드리고 기존에 있던 환경에 terrain을 변경하거나 command나 reward를 변경하는 등 모듈 수준에서 환경을 꾸미게 된다면 Manager-based 환경을 추천드립니다.
+
+ 
+
