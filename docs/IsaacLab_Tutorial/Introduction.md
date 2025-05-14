@@ -6,7 +6,7 @@ nav_order: 0
 
 # Introduction
 
-<video width="760" height="427.5" controls autoplay muted>
+<video width="680" height="382.5" controls autoplay muted>
   <source src="assets/video/스크린캐스트 05-02-2025 04:57:48 PM.webm" type="video/webm">
   Your browser does not support the video tag.
 </video>
