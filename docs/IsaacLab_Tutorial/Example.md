@@ -261,12 +261,12 @@ def compute_rewards(
 Direct cartpole의 실행 코드는 다음과 같습니다.
 
 ```bash
-python scripts/reinforcement_learning/rsl_rl/train.py --task=Isaac-Cartpole-Direct-v0
+./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/train.py --task=Isaac-Cartpole-Direct-v0
 ```
 
 이 코드를 실행하는 영상을 하단에 첨부합니다.
 
-<video width="640" height="360" controls>
+<video width="680" height="382.5" controls>
   <source src="assets/video/스크린캐스트 05-14-2025 03:09:18 PM.webm" type="video/webm">
   Your browser does not support the video tag.
 </video>
@@ -495,12 +495,12 @@ class CartpoleEnvCfg(ManagerBasedRLEnvCfg):
 Manager-based cartpole의 실행 코드는 다음과 같습니다.
 
 ```bash
-python scripts/reinforcement_learning/rsl_rl/train.py --task=Isaac-Cartpole-v0
+./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/train.py --task=Isaac-Cartpole-v0
 ```
 
 이 코드를 실행하는 영상을 하단에 첨부합니다.
 
-<video width="640" height="360" controls>
+<video width="680" height="382.5" controls>
   <source src="assets/video/스크린캐스트 05-14-2025 03:23:58 PM.webm" type="video/webm">
   Your browser does not support the video tag.
 </video>
@@ -508,7 +508,7 @@ python scripts/reinforcement_learning/rsl_rl/train.py --task=Isaac-Cartpole-v0
 
 또한 Manager-based를 실행할 경우 각 클래스 매니저에 대한 정보값이 코드를 실행할 때 보여집니다. 이는 하단에 첨부한 동영상과 같이 실행 터미널 위쪽에서 확인할 수 있습니다.
 
-<video width="640" height="360" controls>
+<video width="680" height="382.5" controls>
   <source src="assets/video/스크린캐스트 05-14-2025 03:30:46 PM.webm" type="video/webm">
   Your browser does not support the video tag.
 </video>
@@ -519,7 +519,7 @@ python scripts/reinforcement_learning/rsl_rl/train.py --task=Isaac-Cartpole-v0
 
 그렇기에 새로운 환경을 처음부터 구축해 나가는 것은 Direct 환경을 추천드리고 기존에 있던 환경에 terrain을 변경하거나 command나 reward를 변경하는 등 모듈 수준에서 환경을 꾸미게 된다면 Manager-based 환경을 추천드립니다.
 
-## Logs
+## Logs & Play
 
 마지막으로 이렇게 학습한 결과를 확인하는 방법입니다. 예시는 Manager-based 기반으로 작성하겠습니다.
 
@@ -529,8 +529,50 @@ python scripts/reinforcement_learning/rsl_rl/train.py --task=Isaac-Cartpole-v0
 
 먼저 logs에 들어있는 내용을 확인하는 동영상을 하단에 첨부하였습니다.
 
-<video width="640" height="360" controls>
+<video width="680" height="382.5" controls>
   <source src="assets/video/스크린캐스트 05-14-2025 04:41:22 PM.webm" type="video/webm">
   Your browser does not support the video tag.
 </video>
 
+먼저 tensorboard logs를 확인하는 방법입니다. tensorboard는 direct와 manager-based 모두 지원하며 .tfevents의 형태로 로그 폴더에 저장되어 있습니다. 이 log 파일을 확인하는 방법은 다음과 같습니다.
+
+```bash
+tensorboard --logdir logs/rsl_rl/cartpole
+```
+
+만약 tensorboard가 설치되어 있지 않으면 다음과 같은 명령어로 설치할 수 있습니다.
+
+```bash
+pip install tensorboardX
+```
+
+이 명령어를 실행하는 영상을 하단에 첨부합니다.
+
+<video width="680" height="382.5" controls>
+  <source src="assets/video/스크린캐스트 05-14-2025 05:22:22 PM.webm" type="video/webm">
+  Your browser does not support the video tag.
+</video>
+
+tensorboard를 통해 reward, loss, termination 등의 정보를 timestep에 따라 그래프로 확인 할 수 있으며 reward가 잘 올라가는지, loss는 잘 내려가는지와 같은 정보를 판단 할 수 있습니다.
+
+다음은 학습한 모델을 실제로 실행해보는 방법입니다. Isaac Lab에서는 학습이 완료된 정책을 불러와 환경에서 실행해볼 수 있도록 play.py 스크립트를 제공합니다.
+
+실행하는 명령어는 다음과 같습니다.
+
+```bash
+./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/play.py --task=Isaac-Cartpole-v0
+```
+
+이렇게 명령어를 작성하게 되면 Isaac-Cartpole-v0 task를 학습한 가장 최근의 모델을 불러와서 실행하게 됩니다. 만약 특정 모델을 지정하고 싶으면 하단과 같은 명령어를 통해 실행 할 수 있습니다.
+
+```bash
+./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/play.py --task=Isaac-Cartpole-v0 --checkpoint logs/rsl_rl/cartpole/학습 날짜_학습 시간/model_100.pt
+```
+
+checkpoint를 통해 특정 모델을 지정할 수 있으며 model_().pt의 경우 ()만큼의 timestep을 학습한 모델을 불러와서 play를 진행해 볼 수 있습니다.
+
+이 명령어를 실행하는 영상을 하단에 첨부합니다.
+
+
+<video width="680" height="382.5" controls>
+  <source src="assets/video/스크린캐스트 05-14-2025 05:58:40 PM.webm" type="video/webm">

@@ -93,7 +93,7 @@ specific-rl-library 부분에 사용 가능한 강화학습 라이브러리를 �
 이 코드를 실행하는 영상을 하단에 첨부합니다.
 
 
-<video width="640" height="360" controls>
+<video width="680" height="382.5" controls>
   <source src="assets/video/스크린캐스트 05-14-2025 02:46:11 PM.webm" type="video/webm">
   Your browser does not support the video tag.
 </video>
