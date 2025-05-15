@@ -36,7 +36,7 @@ IsaacLab
 └── README.md                       # Isaac Lab 프로젝트 개요와 사용법이 담긴 문서  
 </pre>
 
-위의 폴더 구조에서 환경을 새로 만들거나 수정할 경우 source 폴더의 isaaclab 혹은 isaaclab_tasks를 가장 많이 사용하게 됩니다. 또한 새로운 robot이나 에이전트들을 등록하게 된다면 isaaclab_assets를 통해서 에이전트를 등록해야 합니다. Isaaclab_assets와 관련해서 새로운 robot을 등록하기 위한 자료는 밑에 TIPS에 추가해 두었습니다. 
+위의 폴더 구조에서 환경을 새로 만들거나 수정할 경우 source 폴더의 isaaclab 혹은 isaaclab_tasks를 가장 많이 사용하게 됩니다. 또한 새로운 robot이나 에이전트들을 등록하게 된다면 isaaclab_assets를 통해서 에이전트를 등록해야 합니다. Isaaclab_assets와 관련해서 새로운 robot을 등록하기 위한 자료는 밑의 TIPS에 추가해 두었습니다. 
 
 isaaclab과 isaaclab_tasks의 내부를 확인해보게 된다면 다음과 같습니다.
 
