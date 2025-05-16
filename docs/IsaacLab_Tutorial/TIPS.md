@@ -204,6 +204,8 @@ spot arm urdf 파일의 경우 몸 부분의 link와 팔 부분의 joint파일�
 
 <video width="680" height="382.5" controls>
   <source src="assets/video/스크린캐스트 05-16-2025 04:21:51 PM.webm" type="video/webm">
+</video>
+
 
 이렇게 만든 usd파일의 경우 stiffness, damping값들을 모두 0.0으로 설정했다 보니 학습에 있어서 제대로 작동하지 않습니다. 이런 문제를 해결하기 위해서 isaaclab_assets에서 로봇을 추가하고 추가적인 configuration 설정을 진행해야 합니다.
 
@@ -456,7 +458,7 @@ leg 부분의 경우 기존의 spot로봇의 congifuration을 따랐고 나머�
 
 <video width="680" height="382.5" controls>
   <source src="assets/video/스크린캐스트 05-16-2025 05:55:56 PM.webm" type="video/webm">
-
+</video>
 
 또한 새로운 환경을 제작하는데에 있어 다른 좋은 예제가 있습니다. 예제 링크를 하단에 걸어두겠습니다.
 
