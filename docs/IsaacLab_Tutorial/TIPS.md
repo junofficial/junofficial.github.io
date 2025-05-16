@@ -473,7 +473,7 @@ isaaclab_tasks를 호출을 해줘야 새로 만든 환경을 인식하게 설�
 
 ## Adding assets
 
-이번에는 기존의 환경에 새로운 assets를 추가하는 것입니다. Assets또한 usd형식으로 저장되어 있어야 하며 
+이번에는 기존의 환경에 새로운 assets를 추가하는 것입니다. Assets또한 usd형식으로 저장되어 있어야 하며 기본 제공된 대부분의 Assets는 Nucleus 서버에서 가져오는 것입니다. 
 
 ## Changing RL config
 
