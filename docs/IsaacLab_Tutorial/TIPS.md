@@ -465,7 +465,7 @@ leg 부분의 경우 기존의 spot로봇의 congifuration을 따랐고 나머�
 [LechueeAI Leatherback Project](https://lycheeai-hub.com/isaac-lab/projects/leatherback-community-project)
 
 
-여기에서 새로운 환경을 등록하는데에 있는데에 진행이 안되는 경우가 있습니다. 이는 Isaac Lab이 인식하기 위해서 하단의 import처럼
+여기에서 새로운 환경을 등록하는데에 진행이 안되는 경우가 있습니다. 이는 Isaac Lab이 인식하기 위해서 하단의 import처럼
 
 ```bash
 import isaaclab_tasks  # noqa: F401
@@ -593,6 +593,48 @@ world의 pos=(0,0,0)에 table이 생성되었고 방향은 쿼터니언 값으�
 이렇게 원격 서버에서 assets를 확인할 수 있고 코드와 같이 Usd파일을 가져올 수 있습니다. 
 
 ## Changing RL config
+
+이번 챕터에서는 강화학습 학습 관련 매개변수들을 변경하는 방법에 대해 알아보겠습니다. 강화학습 라이브러리 중 RSL_RL을 기반으로 설명드리겠습니다.
+
+RSL_RL의 경우 isaaclab_tasks/direct or manager-based에서 원하는 task에 들어가게 되면 agents라는 폴더가 보일겁니다.
+
+![steps screenshot](assets/img/스크린샷 2025-05-19 16-29-58.png)
+
+이 agents 폴더에 들어가게 되면 각 라이브러리(rsl_rl, skrl, rl_games)에서의 강화학습 config값이 설정되어 있습니다. 
+
+
+```python
+@configclass
+class UnitreeGo2RoughPPORunnerCfg(RslRlOnPolicyRunnerCfg):
+    num_steps_per_env = 24
+    max_iterations = 1500
+    save_interval = 50
+    experiment_name = "unitree_go2_rough"
+    empirical_normalization = False
+    policy = RslRlPpoActorCriticCfg(
+        init_noise_std=1.0,
+        actor_hidden_dims=[512, 256, 128],
+        critic_hidden_dims=[512, 256, 128],
+        activation="elu",
+    )
+    algorithm = RslRlPpoAlgorithmCfg(
+        value_loss_coef=1.0,
+        use_clipped_value_loss=True,
+        clip_param=0.2,
+        entropy_coef=0.01,
+        num_learning_epochs=5,
+        num_mini_batches=4,
+        learning_rate=1.0e-3,
+        schedule="adaptive",
+        gamma=0.99,
+        lam=0.95,
+        desired_kl=0.01,
+        max_grad_norm=1.0,
+    )
+
+```
+
+먼저 PPO runner는 rollout step 수, max iteratin 수, 네트워크 저장 주기, 그리고 네트워크 크기들을 지정합니다. 또한 PPO 알고리즘 설정에서는 다양한 파라미터들을 조절할 수 있으며 학습 환경에 맞춰 지정하면 됩니다.
 
 ## go2 isaac gym parkour
 
