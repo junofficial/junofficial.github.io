@@ -475,7 +475,122 @@ isaaclab_tasks를 호출을 해줘야 새로 만든 환경을 인식하게 설�
 
 ## Adding assets
 
-이번에는 기존의 환경에 새로운 assets를 추가하는 것입니다. Assets또한 usd형식으로 저장되어 있어야 하며 기본 제공된 대부분의 Assets는 Nucleus 서버에서 가져오는 것입니다. 이 챕터에서는
+이번에는 기존의 환경에 새로운 assets를 추가하는 것입니다. Assets또한 usd형식으로 저장되어 있어야 하며 기본 제공된 대부분의 Assets는 Nucleus 서버에서 가져오는 것입니다. 이 챕터에서는 이러한 assets를 추가하고 어떻게 에이전트와 상호작용할 수 있는지 보겠습니다.
+
+먼저 /Desktop/IsaacLab/source/isaaclab_tasks/isaaclab_tasks/manager_based/locomotion/velocity 폴더에 있는 velocity_env_cfg.py를 기준으로 설명을 드리겠습니다. 이 velocity_env_cfg의 경우 모든 locomtion task에서 사용되며 일정 속도를 유지하는 것을 목표로 학습을 하게 됩니다.
+
+코드를 보게 되면 MySceneCfg 클래스에서 환경관련 정보들이 들어있는 것을 확인 할 수 있습니다. MySceneCfg 클래스는 Isaac Lab의 Scene(장면)을 정의하는 클래스로써 센서, 조명, 물체, 그리고 로봇들과 같은 장면에 필요한 요소들을 정의하게 됩니다. 
+
+```python
+@configclass
+class MySceneCfg(InteractiveSceneCfg):
+    terrain = TerrainImporterCfg(
+        prim_path="/World/ground",
+        terrain_type="generator",
+        terrain_generator=ROUGH_TERRAINS_CFG,
+        max_init_terrain_level=5,
+        collision_group=-1,
+        physics_material=sim_utils.RigidBodyMaterialCfg(
+            friction_combine_mode="multiply",
+            restitution_combine_mode="multiply",
+            static_friction=1.0,
+            dynamic_friction=1.0,
+        ),
+        visual_material=sim_utils.MdlFileCfg(
+            mdl_path=f"{ISAACLAB_NUCLEUS_DIR}/Materials/TilesMarbleSpiderWhiteBrickBondHoned/TilesMarbleSpiderWhiteBrickBondHoned.mdl",
+            project_uvw=True,
+            texture_scale=(0.25, 0.25),
+        ),
+        debug_vis=False,
+    )
+    robot: ArticulationCfg = MISSING
+
+    height_scanner = RayCasterCfg(
+        prim_path="{ENV_REGEX_NS}/Robot/base",
+        offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 20.0)),
+        attach_yaw_only=True,
+        pattern_cfg=patterns.GridPatternCfg(resolution=0.1, size=[1.6, 1.0]),
+        debug_vis=False,
+        mesh_prim_paths=["/World/ground"],
+    )
+    contact_forces = ContactSensorCfg(
+        prim_path="{ENV_REGEX_NS}/Robot/.*",
+        history_length=3,
+        track_air_time=True,
+    )
+    sky_light = AssetBaseCfg(
+        prim_path="/World/skyLight",
+        spawn=sim_utils.DomeLightCfg(
+            intensity=750.0,
+            texture_file=f"{ISAAC_NUCLEUS_DIR}/Materials/Textures/Skies/PolyHaven/kloofendal_43d_clear_puresky_4k.hdr",
+        ),
+    )
+```
+
+이 코드에서 또한 자세하게 살펴볼 것은 {ISAAC_NUCLEUS_DIR}와 {ENV_REGEX_NS}입니다.
+
+{ISAAC_NUCLEUS_DIR}의 경우 Nuclues서버에서 asset 파일을 가져와서 사용하고 있습니다. 
+Asset을 사용하고 싶다면 Isaac sim 환경을 실행해서 Isaac Sim Assets를 확인하면 어떤 asset들이 존재하는지 확인 할 수 있습니다. 방법은 다음과 같습니다.
+
+<video width="680" height="382.5" controls>
+  <source src="assets/video/스크린캐스트 05-19-2025 02:07:47 PM.webm" type="video/webm">
+</video>
+
+또한 영상에 나와있듯이 asset을 누르게 되면 file path가 작성되어 있습니다. 이 file path를 통해 usd파일을 import할 수 있습니다. 다음은 영상에서 확인한 table을 scene으로 가져와 보겠습니다. 코드는 하단과 같습니다.
+
+```python
+    table = AssetBaseCfg(
+        prim_path="/World/stairs",
+        init_state=AssetBaseCfg.InitialStateCfg(pos=[0.0, 0, 0], rot=[0.707, 0, 0, 0.707]),
+        spawn=UsdFileCfg(usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Mounts/table.usd"),
+    )
+```
+이 코드를 실행하면 다음과 같은 결과가 나오게 됩니다.
+
+<video width="680" height="382.5" controls>
+  <source src="assets/video/스크린캐스트 05-19-2025 02:30:26 PM.webm" type="video/webm">
+</video>
+
+world의 pos=(0,0,0)에 table이 생성되었고 방향은 쿼터니언 값으로 (0.707, 0, 0, 0.707) 입니다. 이 쿼터니언 값은 y축 기준으로 180도 회전을 나타낸 것으로 책상이 거꾸로 뒤집혀서 생성이 됩니다. 이 world에 생성된 table은 병렬 env의 모든 에이전트와 상호작용이 가능하며 충돌, 마찰등이 적용됩니다.
+
+또한 이 asset을 각 병렬 env마다 할당하는 방법입니다. 그것은 {ENV_REGEX_NS}를 활용하는 것으로 ENV_REGEX_NS로 설정하게 된다면 환경을 복제할때마다 하나씩의 asset이 할당되게 됩니다. 코드는 다음과 같습니다.
+
+```python
+    table = AssetBaseCfg(
+        prim_path="/World/stairs",
+        init_state=AssetBaseCfg.InitialStateCfg(pos=[0.0, 0, 0], rot=[0.707, 0, 0, 0.707]),
+        spawn=UsdFileCfg(usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/Mounts/table.usd"),
+    )
+```
+
+이 코드를 실행하면 다음과 같은 결과가 나오게 됩니다.
+
+<video width="680" height="382.5" controls>
+  <source src="assets/video/스크린캐스트 05-19-2025 03:09:58 PM.webm" type="video/webm">
+</video>
+
+
+이렇게 변경하게 되면 기존의 World에 생성된 table과 달리 각 env마다 하나의 table이 생성된 것을 확인할 수 있습니다. 이 때 table은 다른 agent와는 상호작용할 수 없으며 오로지 각 env에 할당된 agent와 상호작용할 수 있습니다.
+
+현재 작성자의 경우 원격서버를 통해서 Nucleus 서버의 assets를 사용하고 있습니다. 튜토리얼에는 작성할 여력이 없어 공식사이트에 나와있는 설치 방법 링크를 첨부하겠습니다. 그대로 따라해도 안되는 경우가 있어 설치하는데 약간의 노력이 필요합니다. 
+
+[Nucleus server 설치](https://docs.omniverse.nvidia.com/nucleus/latest/enterprise/installation/install-ove-nucleus.html)
+
+이 서버를 설치하게 되면 하단의 코드와 함께 다음과 같이 사용할 수 있습니다.
+
+    table = AssetBaseCfg(
+        prim_path="{ENV_REGEX_NS}/stairs",
+        init_state=AssetBaseCfg.InitialStateCfg(pos=[0.0, 0, 0], rot=[0.707, 0, 0, 0.707]),
+        spawn=UsdFileCfg(usd_path=f"omniverse://192.168.0.9/NVIDIA/Assets/Isaac/4.0/Isaac/Environments/Terrains/stairs.usd"),
+    ) 
+
+이를 실행하는 영상을 하단에 넣어두겠습니다.
+
+<video width="680" height="382.5" controls>
+  <source src="assets/video/스크린캐스트 05-19-2025 04:13:37 PM.webm" type="video/webm">
+</video>
+
+이렇게 원격 서버에서 assets를 확인할 수 있고 코드와 같이 Usd파일을 가져올 수 있습니다. 
 
 ## Changing RL config
 
