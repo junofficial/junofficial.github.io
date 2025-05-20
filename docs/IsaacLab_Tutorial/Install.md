@@ -15,7 +15,7 @@ Isaac Lab은 NVIDIA의 시뮬레이션 엔진인 Isaac Sim 위에서 실행되�
 먼저, Isaac Lab 프로젝트를 위한 Python 환경을 설정해야 합니다.
 Python 3.10을 기반으로 한 conda 가상 환경을 사용하여 개발 환경을 구성하겠습니다.
 ```bash
-conda create -b isaaclab python=3.10
+conda create -n isaaclab python=3.10
 conda activate isaaclab
 ```
 
