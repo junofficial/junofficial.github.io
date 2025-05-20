@@ -636,7 +636,9 @@ class UnitreeGo2RoughPPORunnerCfg(RslRlOnPolicyRunnerCfg):
 
 먼저 PPO runner는 rollout step 수, max iteratin 수, 네트워크 저장 주기, 그리고 네트워크 크기들을 지정합니다. 또한 PPO 알고리즘 설정에서는 다양한 파라미터들을 조절할 수 있으며 학습 환경에 맞춰 지정하면 됩니다.
 
-## go2 isaac gym parkour
+## Extreme Parkour with Legged Robots
+
+https://github.com/chengxuxin/extreme-parkour
 
 ## 논문 돌린것들 몇개
 

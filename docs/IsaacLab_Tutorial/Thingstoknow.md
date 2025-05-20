@@ -101,11 +101,11 @@ specific-rl-library 부분에 사용 가능한 강화학습 라이브러리를 �
 또한 zero-action 혹은 random-action을 통해 환경을 확인하고 싶다면 하단의 명령어를 사용하면 됩니다.
 
 ```bash
-python scripts/zero_agent.py --task=<Task-Name>
+python scripts/environements/zero_agent.py --task=<Task-Name>
 ```
 
 ```bash
-python scripts/random_agent.py --task=<Task-Name>
+python scripts/environements/random_agent.py --task=<Task-Name>
 ```
 
 ## Task design
