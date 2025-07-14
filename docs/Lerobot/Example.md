@@ -10,23 +10,50 @@ nav_order: 3
 그 전에 먼저 Leader 로봇팔을 통해서 Follower 로봇팔을 조작하는 teleoperate 예시부터 진행해 보겠습니다.
 
 
-## Direct task
+## Teleoperate
+Teleoperate의 경우 leader암을 통해서 follower암을 조작할 수 있도록 합니다. Teleoperate 명령을 통해 Leader 로봇팔의 움직임을 Follower 로봇팔이 실시간으로 복제하도록 설정할 수 있습니다. 명령어는 다음과 같습니다.
 
-예제에서 제공된 CartpoleEnv 클래스는 Direct 방식으로 작성된 환경입니다.
+```bash
+python -m lerobot.teleoperate \
+    --robot.type=so101_follower \
+    --robot.port=/dev/ttyACM0 \
+    --robot.id=cvr_follower_arm \
+    --teleop.type=so101_leader \
+    --teleop.port=/dev/ttyACM1 \
+    --teleop.id=cvr_leader_arm
+```
 
-주요 구조는 다음과 같습니다:
+사용하는 argument는 다음과 같습니다:
 
 <pre>
- - __init__(): 로봇의 관절 인덱스와 상태 버퍼를 설정합니다.
- - _setup_scene(): 로봇과 바닥, 조명을 씬에 배치하고 물리 복제를 설정합니다.
- - _pre_physics_step()과 _apply_action(): 행동 벡터를 받아 실제 물리 시뮬레이션에 적용합니다.
- - _get_observations(): 현재 관절 상태로부터 관측 벡터를 구성합니다.
- - _get_rewards(): 지정된 조건에 따라 보상을 계산합니다.
- - _get_dones(): 카트나 막대의 상태가 유효 범위를 넘었는지 확인하여 종료 조건을 반환합니다.
- - _reset_idx(): 초기 상태를 무작위로 샘플링하여 재설정합니다.
+--robot.type    # Follower 로봇의 모델 타입을 지정합니다. 예) so101_follower
+--robot.port    # Follower 로봇이 연결된 직렬 포트 경로를 지정합니다. 예) /dev/ttyACM0
+--robot.id       # 보정(calibration) 파일을 저장할 식별자(ID)입니다.
+--teleop.type   # Teleop 장치(Leader 암)의 모델을 지정합니다. 예) so101_leader
+--teleop.port   # Teleop 장치가 연결된 포트 경로를 지정합니다. 예) /dev/ttyACM1
+--teleop.id      # Teleop 장치의 식별자(ID)로, 로봇 보정·기록·평가 단계에서 동일하게 사용해야 합니다.
 </pre>
 
-**class CartpoleEnvCfg**
+또한 텔레오퍼레이션에 카메라 피드를 추가하면 로봇의 조작과 동시에 실시간 영상도 함께 확인할 수 있습니다. 특히 물체의 위치나 자세를 보면서 조작할 때 매우 유용합니다. 다음은 teleoperate 예제에 카메라를 추가하는 예시입니다.
+주요 구조는 위의 teleoperate명령어와 거의 동일하지만 사용하는 카메라를 명령어에 추가시켜야 합니다. 명령어는 다음과 같습니다:
+
+```bash
+python -m lerobot.teleoperate \
+    --robot.type=so101_follower \
+    --robot.port=/dev/ttyACM0 \
+    --robot.id=cvr_follower_arm \
+    --robot.cameras="{ front: {type: intelrealsense, width: 640, height: 480, fps: 15, serial_number_or_name: 223322300015}, top: {type: opencv, index_or_path: 0, width: 640, height: 480, fps: 15}}"
+    --teleop.type=so101_leader \
+    --teleop.port=/dev/ttyACM1 \
+    --teleop.id=cvr_leader_arm
+```
+
+camera를 사용하는 경우 intelrealsense, opencv, phone cam 등 이렇게 3가지 예시가 있을 수 있는데 핸드폰 카메라를 사용하는 경우 v4l2loopback-dkms 설치 오류로 인해 진행하지 못했습니다. 만약 이외의 카메라를 사용한다면 위의 예시를 참고하여 명령어를 작성해주시면 될 것 같습니다. 또한 카메라 관련 링크를 하단에 첨부해 두겠습니다.
+
+[Camera setup](https://huggingface.co/docs/lerobot/cameras?use+phone=Linux#setup-cameras)
+
+## Record
+
 
 이 클래스는 configuration 클래스로 환경의 동작 주기, 시뮬레이션 설정, 로봇 정보, 보상 관련 스케일 등을 정의합니다.
 
