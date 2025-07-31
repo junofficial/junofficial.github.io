@@ -1,6 +1,6 @@
 ---
 layout: default
-title: What is All This? (FAQs)
+title: Install
 nav_order: 1
 ---
 

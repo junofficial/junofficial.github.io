@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Example
-nav_order: 3
+nav_order: 2
 ---
 
 # Example
@@ -28,10 +28,10 @@ python -m lerobot.teleoperate \
 <pre>
 --robot.type    # Follower 로봇의 모델 타입을 지정합니다. 예) so101_follower
 --robot.port    # Follower 로봇이 연결된 직렬 포트 경로를 지정합니다. 예) /dev/ttyACM0
---robot.id       # 보정(calibration) 파일을 저장할 식별자(ID)입니다.
+--robot.id      # 보정(calibration) 파일을 저장할 식별자(ID)입니다.
 --teleop.type   # Teleop 장치(Leader 암)의 모델을 지정합니다. 예) so101_leader
 --teleop.port   # Teleop 장치가 연결된 포트 경로를 지정합니다. 예) /dev/ttyACM1
---teleop.id      # Teleop 장치의 식별자(ID)로, 로봇 보정·기록·평가 단계에서 동일하게 사용해야 합니다.
+--teleop.id     # Teleop 장치의 식별자(ID)로, 모든 단계에서 동일하게 사용해야 합니다.
 </pre>
 
 또한 텔레오퍼레이션에 카메라 피드를 추가하면 로봇의 조작과 동시에 실시간 영상도 함께 확인할 수 있습니다. 특히 물체의 위치나 자세를 보면서 조작할 때 매우 유용합니다. 다음은 teleoperate 예제에 카메라를 추가하는 예시입니다.
@@ -52,549 +52,93 @@ camera를 사용하는 경우 intelrealsense, opencv, phone cam 등 이렇게 3�
 
 [Camera setup](https://huggingface.co/docs/lerobot/cameras?use+phone=Linux#setup-cameras)
 
-## Record
+## Record & Replay
 
-
-이 클래스는 configuration 클래스로 환경의 동작 주기, 시뮬레이션 설정, 로봇 정보, 보상 관련 스케일 등을 정의합니다.
-
-```python
-@configclass
-class CartpoleEnvCfg(DirectRLEnvCfg):
-    # 환경에 대한 설정 클래스
-    decimation = 2                          # 시뮬레이션 스텝 중 몇 번에 한 번 행동 적용할지 결정
-    episode_length_s = 5.0                  # 한 에피소드의 최대 길이 (초 단위)
-    action_scale = 100.0                    # 행동 값에 곱해지는 스케일
-    action_space = 1                        # 행동 공간의 크기
-    observation_space = 4                   # 관측 벡터의 길이
-    state_space = 0                         # 사용하지 않음
-
-    sim: SimulationCfg = SimulationCfg(dt=1 / 120, render_interval=decimation)
-
-    robot_cfg: ArticulationCfg = CARTPOLE_CFG.replace(prim_path="/World/envs/env_.*/Robot")
-    cart_dof_name = "slider_to_cart"        # 카트 관절 이름
-    pole_dof_name = "cart_to_pole"          # 폴 관절 이름
-
-    scene: InteractiveSceneCfg = InteractiveSceneCfg(
-        num_envs=4096, env_spacing=4.0, replicate_physics=True
-    )
-
-    max_cart_pos = 3.0                      # 카트가 벗어나면 에피소드 종료
-    initial_pole_angle_range = [-0.25, 0.25]  # 폴 초기 각도 범위
-
-    # 보상 함수 항목별 스케일
-    rew_scale_alive = 1.0
-    rew_scale_terminated = -2.0
-    rew_scale_pole_pos = -1.0
-    rew_scale_cart_vel = -0.01
-    rew_scale_pole_vel = -0.005
-```
-**__init__(...)**
-
-이 함수는 환경 인스턴스를 초기화하는 생성자입니다.
-주어진 설정(config)을 바탕으로 환경 기본 요소들을 구성하며, 로봇 아티큘레이션에서 카트와 폴의 관절 이름에 해당하는 인덱스를 찾아 저장합니다.
-
-```python
-class CartpoleEnv(DirectRLEnv):
-    # 환경 클래스 정의
-    cfg: CartpoleEnvCfg
-
-    def __init__(self, cfg: CartpoleEnvCfg, render_mode: str | None = None, **kwargs):
-        super().__init__(cfg, render_mode, **kwargs)
-
-        # 관절 인덱스를 찾고 저장
-        self._cart_dof_idx, _ = self.cartpole.find_joints(self.cfg.cart_dof_name)
-        self._pole_dof_idx, _ = self.cartpole.find_joints(self.cfg.pole_dof_name)
-
-        self.action_scale = self.cfg.action_scale
-        self.joint_pos = self.cartpole.data.joint_pos
-        self.joint_vel = self.cartpole.data.joint_vel
-```
-
-**_setup_scene(...)**
-
-이 함수는 시뮬레이션 내에 로봇과 환경 요소를 배치하는 역할을 합니다.
-로봇 아티큘레이션을 생성하고, 지면 평면을 추가하며, 여러 환경 인스턴스를 클론하여 배치합니다.
-이 과정에서 각 환경은 물리적으로 분리되어 있으며, 복수의 학습 환경을 병렬로 시뮬레이션할 수 있도록 구성됩니다.
-
-**_pre_physics_step(...)**
-
-이 함수는 물리 시뮬레이션이 실행되기 전 호출되어 policy로 부터 받은 action을 물리적으로 적용시키기 위해서 스케일링 등과 같이 조정되는 단계입니다.
-
-**_apply_action(...)**
-
-이 함수는 _pre_physics_step(...)에서 조정된 action값을 실제 시뮬레이션에 적용하는 단계입니다. 
-
-```python
-    def _setup_scene(self):
-        # 로봇 추가 및 환경 설정
-        self.cartpole = Articulation(self.cfg.robot_cfg) # 관절 요소 추가
-        spawn_ground_plane(prim_path="/World/ground", cfg=GroundPlaneCfg()) # 지면 추가
-        self.scene.clone_environments(copy_from_source=False) # Scene에 환경 복제(병렬화)
-        self.scene.articulations["cartpole"] = self.cartpole # Scene에 등록
-
-        # 조명 추가
-        light_cfg = sim_utils.DomeLightCfg(intensity=2000.0, color=(0.75, 0.75, 0.75))
-        light_cfg.func("/World/Light", light_cfg)
-        
-    def _pre_physics_step(self, actions: torch.Tensor) -> None:
-        # 물리 엔진에 전달하기 전에 행동 스케일링
-        self.actions = self.action_scale * actions.clone()
-
-    def _apply_action(self) -> None:
-        # 행동을 카트에 힘으로 적용
-        self.cartpole.set_joint_effort_target(self.actions, joint_ids=self._cart_dof_idx)
-```
-
-**_get_observations(...)**
-
-이 함수는 에이전트의 현재 관측값을 받아오는 함수입니다. Obs의 경우 cartpole에서는 pole의 속도와 각도, 카드의 위치와 속도를 obs로 결합하여 사용합니다.
-        
-```python
-    def _get_observations(self) -> dict:
-        # 관측 벡터를 구성하여 반환
-        obs = torch.cat(
-            (
-                self.joint_pos[:, self._pole_dof_idx[0]].unsqueeze(1),
-                self.joint_vel[:, self._pole_dof_idx[0]].unsqueeze(1),
-                self.joint_pos[:, self._cart_dof_idx[0]].unsqueeze(1),
-                self.joint_vel[:, self._cart_dof_idx[0]].unsqueeze(1),
-            ),
-            dim=-1,
-        )
-        observations = {"policy": obs}
-        return observations
-```
-
-**_get_rewards(...)**
-
-이 함수는 현재 상태에서의 보상을 계산하는 함수입니다. 보상항목은 생존 보상, 종료 패널티, 막대의 수직도, 카드 속도, 막대 각속도 등으로 구성되어 있으며 self.cfg는 초기에 CarpoleEnvCfg에서 설정한 reward scales와 보상을 계산하기 위한 현재 agent의 상태들을 compute_rewards에서 계산하게 됩니다.
-
-
-```python
-    def _get_rewards(self) -> torch.Tensor:
-        # 보상 함수 계산
-        total_reward = compute_rewards(
-            self.cfg.rew_scale_alive,
-            self.cfg.rew_scale_terminated,
-            self.cfg.rew_scale_pole_pos,
-            self.cfg.rew_scale_cart_vel,
-            self.cfg.rew_scale_pole_vel,
-            self.joint_pos[:, self._pole_dof_idx[0]],
-            self.joint_vel[:, self._pole_dof_idx[0]],
-            self.joint_pos[:, self._cart_dof_idx[0]],
-            self.joint_vel[:, self._cart_dof_idx[0]],
-            self.reset_terminated,
-        )
-        return total_reward
-```
-
-**compute_rewards(...)**
-
-compute rewards에서 보상은 다음과 같이 계산됩니다.
-
- - R = R_alive + R_termination + R_pole_pos + R_cart_vel + R_pole_vel
- - R_alive = w_alive × (1 - d)
- - R_termination = w_termination × d
- - R_pole_pos = w_pole_pos × sum(p_i^2)
- - R_cart_vel = w_cart_vel × sum(|v_cart_i|)
- - R_pole_vel = w_pole_vel × sum(|v_pole_i|)
-
-여기서,
- - d는 에피소드 종료 여부 (종료: 1, 생존: 0)
- - p_i는 막대의 관절 위치(각도)
- - v_cart_i, v_pole_i는 각각 카트와 폴의 관절 속도
- - w_*는 각 보상 항목에 대한 스케일 값입니다 (rew_scale_*)
-
-```python
-@torch.jit.script
-def compute_rewards(
-    # 각 보상 항목 계산 및 총합
-    rew_scale_alive: float,
-    rew_scale_terminated: float,
-    rew_scale_pole_pos: float,
-    rew_scale_cart_vel: float,
-    rew_scale_pole_vel: float,
-    pole_pos: torch.Tensor,
-    pole_vel: torch.Tensor,
-    cart_pos: torch.Tensor,
-    cart_vel: torch.Tensor,
-    reset_terminated: torch.Tensor,
-):
-    rew_alive = rew_scale_alive * (1.0 - reset_terminated.float())
-    rew_termination = rew_scale_terminated * reset_terminated.float()
-    rew_pole_pos = rew_scale_pole_pos * torch.sum(torch.square(pole_pos).unsqueeze(dim=1), dim=-1)
-    rew_cart_vel = rew_scale_cart_vel * torch.sum(torch.abs(cart_vel).unsqueeze(dim=1), dim=-1)
-    rew_pole_vel = rew_scale_pole_vel * torch.sum(torch.abs(pole_vel).unsqueeze(dim=1), dim=-1)
-    total_reward = rew_alive + rew_termination + rew_pole_pos + rew_cart_vel + rew_pole_vel
-    return total_reward
-```
-
-**_get_dones(...)**
-
-이 함수는 에피소드가 종료되었는지의 여부를 판단합니다. 종료 조건은 두가지로 다음과 같습니다:
-
- - done = done_pos or done_time
- - done_time = (t >= T_max)
- - done_pos = (|x_cart| > x_max) or (|theta_pole| > π / 2)
-
-```python
-    def _get_dones(self) -> tuple[torch.Tensor, torch.Tensor]:
-        # 종료 조건 평가 (시간 초과 또는 위치 초과)
-        self.joint_pos = self.cartpole.data.joint_pos
-        self.joint_vel = self.cartpole.data.joint_vel
-
-        time_out = self.episode_length_buf >= self.max_episode_length - 1
-        out_of_bounds = torch.any(torch.abs(self.joint_pos[:, self._cart_dof_idx]) > self.cfg.max_cart_pos, dim=1)
-        out_of_bounds = out_of_bounds | torch.any(torch.abs(self.joint_pos[:, self._pole_dof_idx]) > math.pi / 2, dim=1)
-        return out_of_bounds, time_out
-```
-
-**_reset_idx(...)**
-
-이 함수는 환경들을 초기화 하는 함수입니다. 관절의 초기 위치와 속도를 설정하며 폴의 경우에는 범위내에서 무작위로 샘플링됩니다.
-
-```python
-    def _reset_idx(self, env_ids: Sequence[int] | None):
-        # 선택된 환경 인덱스를 초기화
-        if env_ids is None:
-            env_ids = self.cartpole._ALL_INDICES
-        super()._reset_idx(env_ids)
-
-        joint_pos = self.cartpole.data.default_joint_pos[env_ids]
-        joint_pos[:, self._pole_dof_idx] += sample_uniform(
-            self.cfg.initial_pole_angle_range[0] * math.pi,
-            self.cfg.initial_pole_angle_range[1] * math.pi,
-            joint_pos[:, self._pole_dof_idx].shape,
-            joint_pos.device,
-        )
-        joint_vel = self.cartpole.data.default_joint_vel[env_ids]
-
-        default_root_state = self.cartpole.data.default_root_state[env_ids]
-        default_root_state[:, :3] += self.scene.env_origins[env_ids]
-
-        self.joint_pos[env_ids] = joint_pos
-        self.joint_vel[env_ids] = joint_vel
-
-        self.cartpole.write_root_pose_to_sim(default_root_state[:, :7], env_ids)
-        self.cartpole.write_root_velocity_to_sim(default_root_state[:, 7:], env_ids)
-        self.cartpole.write_joint_state_to_sim(joint_pos, joint_vel, None, env_ids)
-```
-
-Direct cartpole의 실행 코드는 다음과 같습니다.
+Record 단계는 사람이 텔레오퍼레이션을 통해 수행한 작업을 기반으로 데이터셋을 생성하는 단계입니다. 아래는 lerobot을 이용해 특정 작업(예: Grab the orange cube and put into black box)을 수행하며 데이터를 기록하는 예시입니다.
 
 ```bash
-./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/train.py --task=Isaac-Cartpole-Direct-v0
+python -m lerobot.record \
+  --robot.type=so101_follower \
+  --robot.port=/dev/ttyACM0 \
+  --robot.id=cvr_follower_arm \
+  --robot.cameras="{ front: {type: intelrealsense, width: 640, height: 480, fps: 15, serial_number_or_name: 223322300039}, top: {type: opencv, index_or_path: 0, width: 640, height: 480, fps: 15}}" \
+  --teleop.type=so101_leader \
+  --teleop.port=/dev/ttyACM1 \
+  --teleop.id=cvr_leader_arm \
+  --display_data=true \
+  --dataset.repo_id=${HF_USER}/record-test-box \
+  --dataset.num_episodes=50 \
+  --dataset.single_task="Grab the orange cube and put into black box"
 ```
 
-이 코드를 실행하는 영상을 하단에 첨부합니다.
+record의 경우 기존의 teleoperate명령어와 다르게 dataset, display_data와 같은 인자가 추가됩니다. 각 인자는 다음과 같습니다.
 
-<video width="680" height="382.5" controls>
-  <source src="assets/video/스크린캐스트 05-14-2025 03:09:18 PM.webm" type="video/webm">
-  Your browser does not support the video tag.
-</video>
+<pre>
+--display_data          # 각 모터, 카메라의 정보를 컴퓨터에서 확인할 수 있습니다.
+--dataset.repo_id       # HuggingFace에 업로드될 데이터셋 저장 위치를 지정합니다.
+--dataset.num_episodes  # 몇 개의 에피소드를 기록할지 지정합니다. (약 50개)
+--dataset.single_task   # imitation learning에 사용될 자연어 task 명령어를 지정.
+</pre>
 
-
-
-## Manager-based task
-
-이번 예제는 Cartpole task를 manager-based 방식으로 작성한 환경입니다. Manager-based task는 Isaac Lab에서 제공하는 환경 모듈화 방식을 따릅니다. 각 기능(보상, 관측, 초기화, 종료 조건 등)을 독립적인 Manager 클래스로 나누고, 이들을 하나의 설정(Config class)으로 통합합니다. 구성 요소 간 의존성이 줄어들기 때문에 복잡한 시나리오나 다수의 환경을 동시에 개발하고자 할 때 유리한 구조입니다.
-
-주요 구조는 다음과 같습니다:
-
- - CartpoleSceneCfg: 환경 내 지형, 조명, 로봇을 정의합니다.
- - ActionsCfg: 어떤 방식으로 행동을 적용할지 설정합니다.
- - ObservationsCfg: 어떤 관측값을 policy에 전달할지 정의합니다.
- - EventCfg: 리셋 시 어떤 초기화를 적용할지 설정합니다.
- - RewardsCfg: 보상을 구성하는 항목과 스케일을 정의합니다.
- - TerminationsCfg: 종료 조건들을 정의합니다.
-
-이러한 구성들은 ManagerBasedRLEnvCfg를 상속한 환경 설정 클래스(CartpoleEnvCfg)에서 모두 통합되며, 실행 시 ManagerBasedEnv가 이 구성들을 읽어 전체 시뮬레이션 루프를 관리합니다.
-
-**CartpoleSceneCfg**
-
-이 클래스는 시뮬레이션 내의 물리적 배치를 정의합니다. 지면(ground), 로봇(robot), 조명(light)을 설정합니다.
-
-
-```python
-class CartpoleSceneCfg(InteractiveSceneCfg):
-    """Configuration for a cart-pole scene."""
-
-    # 지면 설정: 넓은 평면을 생성
-    ground = AssetBaseCfg(
-        prim_path="/World/ground",
-        spawn=sim_utils.GroundPlaneCfg(size=(100.0, 100.0)),
-    )
-
-    # 카트폴 로봇 설정: 환경별로 prim_path 지정
-    robot: ArticulationCfg = CARTPOLE_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
-
-    # 돔 라이트 설정: 밝기와 색 지정
-    dome_light = AssetBaseCfg(
-        prim_path="/World/DomeLight",
-        spawn=sim_utils.DomeLightCfg(color=(0.9, 0.9, 0.9), intensity=500.0),
-    )
-```
-
-**ActionsCfg**
-
-이 클래스는 joint_effort를 통해 카트에 직접적인 힘을 가합니다.
-
-```python
-@configclass
-class ActionsCfg:
-    """Action specifications for the MDP."""
-
-    # 카트 관절에 joint effort 방식의 제어 적용 (힘 기반 제어)
-    joint_effort = mdp.JointEffortActionCfg(asset_name="robot", joint_names=["slider_to_cart"], scale=100.0)
-```
-
-**ObservationsCfg**
-
-이 클래스에서는 정책에 입력되는 obs 구성을 정의하는 PolicyCfg로 이루어져 있으며 관절 위치 및 속도를 상대적인 값으로 policy에 전달하게 됩니다.
-
-```python
-class ObservationsCfg:
-    """Observation specifications for the MDP."""
-
-    @configclass
-    class PolicyCfg(ObsGroup):
-        """Observations for policy group."""
-
-        # 상대 관절 위치와 속도를 관측값으로 사용
-        joint_pos_rel = ObsTerm(func=mdp.joint_pos_rel)
-        joint_vel_rel = ObsTerm(func=mdp.joint_vel_rel)
-
-        def __post_init__(self) -> None:
-            # 관측값 손상 비활성화 및 항목 결합 설정
-            self.enable_corruption = False
-            self.concatenate_terms = True
-
-    # policy라는 이름의 관측 그룹으로 지정
-    policy: PolicyCfg = PolicyCfg()
-```
-
-**EventCfg**
-
-이 클래스는 이벤트를 정의하는 클래스로 현 task에서는 카트 및 폴의 위치와 속도를 일정 범위에서 무작위로 초기화합니다.
-
-```python
-@configclass
-class EventCfg:
-    """Configuration for events."""
-
-    # 카트 관절 초기화: 위치와 속도 범위 내 무작위 샘플링
-    reset_cart_position = EventTerm(
-        func=mdp.reset_joints_by_offset,
-        mode="reset",
-        params={
-            "asset_cfg": SceneEntityCfg("robot", joint_names=["slider_to_cart"]),
-            "position_range": (-1.0, 1.0),
-            "velocity_range": (-0.5, 0.5),
-        },
-    )
-
-    # 폴 관절 초기화: 각도 및 각속도 범위 내 무작위 샘플링
-    reset_pole_position = EventTerm(
-        func=mdp.reset_joints_by_offset,
-        mode="reset",
-        params={
-            "asset_cfg": SceneEntityCfg("robot", joint_names=["cart_to_pole"]),
-            "position_range": (-0.25 * math.pi, 0.25 * math.pi),
-            "velocity_range": (-0.25 * math.pi, 0.25 * math.pi),
-        },
-    )
-```
-
-**RewardsCfg**
-
-보상 함수는 다음과 같은 총합으로 구성됩니다:
-
-R = R_alive + R_termination + R_pole_pos + R_cart_vel + R_pole_vel
-
-각 항목은 다음과 같이 정의됩니다:
-
-- 생존 보상 (계속 살아있을 경우 1점 부여):  
-  R_alive = w_alive × (1 - d)  
-  - d: 종료 여부 (종료 시 d = 1, 생존 시 d = 0)  
-  - w_alive = 1.0
-
-- 종료 페널티 (에피소드가 끝나면 벌점):  
-  R_termination = w_termination × d  
-  - w_termination = -2.0
-
-- 폴 각도 오차 보상 (막대를 수직으로 유지):  
-  R_pole_pos = w_pole_pos × ||θ_pole - θ_target||²  
-  - θ_target = 0 (직립 상태)  
-  - w_pole_pos = -1.0
-
-- 카트 속도 줄이기 보상:  
-  R_cart_vel = w_cart_vel × ||v_cart||₁  
-  - w_cart_vel = -0.01
-
-- 폴 각속도 줄이기 보상:  
-  R_pole_vel = w_pole_vel × ||ω_pole||₁  
-  - w_pole_vel = -0.005
-
-
-```python
-@configclass
-class RewardsCfg:
-    """Reward terms for the MDP."""
-
-    # 생존 보상: 에피소드 지속에 대해 보상
-    alive = RewTerm(func=mdp.is_alive, weight=1.0)
-    # 종료 패널티: 실패 시 페널티 부여
-    terminating = RewTerm(func=mdp.is_terminated, weight=-2.0)
-    # 폴 각도를 수직으로 유지할수록 보상 증가
-    pole_pos = RewTerm(
-        func=mdp.joint_pos_target_l2,
-        weight=-1.0,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["cart_to_pole"]), "target": 0.0},
-    )
-    # 카트 속도 최소화 보상
-    cart_vel = RewTerm(
-        func=mdp.joint_vel_l1,
-        weight=-0.01,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["slider_to_cart"])}
-    )
-    # 폴의 각속도 최소화 보상
-    pole_vel = RewTerm(
-        func=mdp.joint_vel_l1,
-        weight=-0.005,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["cart_to_pole"])}
-    )
-```
-
-** TerminationsCfg **
-
-이 클래스는 종료 조건을 정의하는 클래스로 현 task에서는 시간 초과 또는 카트가 주어진 위치 범위를 벗어난 경우 종료합니다.
-
-```python
-@configclass
-class TerminationsCfg:
-    """Termination terms for the MDP."""
-
-    # 일정 시간 초과 시 종료
-    time_out = DoneTerm(func=mdp.time_out, time_out=True)
-    # 카트가 제한된 위치를 벗어날 경우 종료
-    cart_out_of_bounds = DoneTerm(
-        func=mdp.joint_pos_out_of_manual_limit,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=["slider_to_cart"]), "bounds": (-3.0, 3.0)},
-    )
-```
-
-**CartpoleEnvCfg**
-
-이 클래스는 위에 정의한 scene, observation, action, reward, event, termination 구성 요소를 통합하여 전체 환경 설정을 완성합니다.
-
-```python
-@configclass
-class CartpoleEnvCfg(ManagerBasedRLEnvCfg):
-    """Configuration for the cartpole environment."""
-
-    # Scene 설정: 지형, 조명, 로봇 포함
-    scene: CartpoleSceneCfg = CartpoleSceneCfg(num_envs=4096, env_spacing=4.0)
-    # 관측 설정
-    observations: ObservationsCfg = ObservationsCfg()
-    # 행동 설정
-    actions: ActionsCfg = ActionsCfg()
-    # 초기화 이벤트 설정
-    events: EventCfg = EventCfg()
-    # 보상 설정
-    rewards: RewardsCfg = RewardsCfg()
-    # 종료 조건 설정
-    terminations: TerminationsCfg = TerminationsCfg()
-
-    # 시뮬레이션, 렌더링, 뷰어 설정
-    def __post_init__(self) -> None:
-        self.decimation = 2                               # 시뮬레이션 스텝마다 행동 적용 빈도
-        self.episode_length_s = 5                         # 에피소드 길이 (초)
-        self.viewer.eye = (8.0, 0.0, 5.0)                 # 카메라 위치 설정
-        self.sim.dt = 1 / 120                             # 시뮬레이션 타임스텝
-        self.sim.render_interval = self.decimation       # 렌더링 빈도 설정
-```
-
-Manager-based cartpole의 실행 코드는 다음과 같습니다.
+이렇게 record한 데이터셋은 replay를 통해서 저장했던 action을 그대로 follower암에서 재현할 수 있습니다. 명령어는 다음과 같습니다.
 
 ```bash
-./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/train.py --task=Isaac-Cartpole-v0
+python -m lerobot.replay \
+    --robot.type=so101_follower \
+    --robot.port=/dev/ttyACM0 \
+    --robot.id=cvr_follower_arm \
+    --dataset.repo_id=${HF_USER}/record-test-box \
+    --dataset.episode=13
 ```
 
-이 코드를 실행하는 영상을 하단에 첨부합니다.
+여기에서 episode를 지정하여 action이 잘 저장되고 실행되는지를 확인할 수 있으며 만약 상자를 잡는 task라면 상자 위치를 record할 때 사용했던 위치와 완전 동일하게 배치해야지 정상적으로 상자를 집어 원하는 task를 수행 할 수 있습니다.
 
-<video width="680" height="382.5" controls>
-  <source src="assets/video/스크린캐스트 05-14-2025 03:23:58 PM.webm" type="video/webm">
-  Your browser does not support the video tag.
-</video>
+## train
 
-
-또한 Manager-based를 실행할 경우 각 클래스 매니저에 대한 정보값이 코드를 실행할 때 보여집니다. 이는 하단에 첨부한 동영상과 같이 실행 터미널 위쪽에서 확인할 수 있습니다.
-
-<video width="680" height="382.5" controls>
-  <source src="assets/video/스크린캐스트 05-14-2025 03:30:46 PM.webm" type="video/webm">
-  Your browser does not support the video tag.
-</video>
+다음은 train입니다. train의 경우 2가지 예시로 나눌 수 있습니다. 먼저 아무런 학습이 되지 않은 네트워크를 가져와서 immitation learning을 시키는 경우와 smolVLA와 같이 사전 학습된 LLM모델을 불러와 finetuning시키는 두가지 경우가 있습니다.
 
 
-이는 Direct task에 비해 현재 학습 환경에 대한 정보도 얻기 좋으며 좀 더 체계적으로 학습을 진행 할 수 있습니다. 다만 이렇게 Manager-based 환경을 꾸미기 위해서 상속받은 ManagerBasedRLEnvCfg을 정확하게 이해하고 사용해야 된다는 점에서 꽤나 오랜 시간을 소요하게 되고 복잡성이 증가합니다. 
-
-
-그렇기에 새로운 환경을 처음부터 구축해 나가는 것은 Direct 환경을 추천드리고 기존에 있던 환경에 terrain을 변경하거나 command나 reward를 변경하는 등 모듈 수준에서 환경을 꾸미게 된다면 Manager-based 환경을 추천드립니다.
-
-## Logs & Play
-
-마지막으로 이렇게 학습한 결과를 확인하는 방법입니다. 예시는 Manager-based 기반으로 작성하겠습니다.
-
-학습한 모든 내용은 Isaac Lab의 처음 디렉토리인 logs에 저장되게 됩니다. 각 logs는 학습한 강화학습 프레임워크마다 저장되며 rsl_rl을 선택해서 학습했을 경우 rsl_rl의 cartpole 폴더에 저장되게 됩니다. 
-
-각 폴더에는 tensorboard의 로그파일, 학습한 모델의 weight파일, 학습환경과  agent 설정에 대한 yaml파일과 pickle파일이 존재합니다. 이렇게 저장된 내용들을 통해 사용자는 학습 로그를 확인할 수 있고 학습한 모델을 불러오거나 실행시켜볼 수 있습니다.
-
-먼저 logs에 들어있는 내용을 확인하는 동영상을 하단에 첨부하였습니다.
-
-<video width="680" height="382.5" controls>
-  <source src="assets/video/스크린캐스트 05-14-2025 04:41:22 PM.webm" type="video/webm">
-  Your browser does not support the video tag.
-</video>
-
-먼저 tensorboard logs를 확인하는 방법입니다. tensorboard는 direct와 manager-based 모두 지원하며 .tfevents의 형태로 로그 폴더에 저장되어 있습니다. 이 log 파일을 확인하는 방법은 다음과 같습니다.
+### immitation learning
+먼저 immitation learning입니다. record했던 데이터셋을 기반으로 immitation learning을 진행하며 초기화된 정책(--policy.type=act)을 사용하여 데이터셋으로부터 행동을 모방하도록 학습합니다.
 
 ```bash
-tensorboard --logdir logs/rsl_rl/cartpole
+python lerobot/scripts/train.py \
+    --dataset.repo_id=${HF_USER}/record-test-box0 \
+    --policy.type=act \   
+    --output_dir=outputs/train/act_test \   
+    --job_name=act_test \   
+    --policy.device=cuda \   
+    --wandb.enable=false \ 
+    --policy.repo_id=junho232
 ```
 
-만약 tensorboard가 설치되어 있지 않으면 다음과 같은 명령어로 설치할 수 있습니다.
+여기에서 immitation learning을 위한 추가 argument는 다음과 같습니다.,
+
+<pre>
+--policy.type    # 사전 학습 없이, act 기반 기본 모델을 사용합니다.
+--output_dir     # 학습 중 생성되는 로그, 체크포인트 등을 저장하는 경로입니다.
+--job_name       # 학습 job의 이름입니다. wandb에 사용됩니다.
+--wandb.enable   # wandb 사용여부를 결정합니다.
+--policy.repo_id # 학습 완료 후 HuggingFace에 policy를 업로드할 위치입니다
+</pre>
+
+여기에서 사용되는 policy.type은 act알고리즘을 사용하게 되는데, 이외에도 diffusion, pi0, pi0fast, smolvla등 다양한 알고리즘들이 존재합니다. 테스트 결과 act알고리즘이 데이터셋 50~60개에서 가장 잘 작동하는 것을 확인하였고 개인적으로 act알고리즘의 논문을 한번 확인해보고 어떻게 작동하는지 알아두면 좋을 것 같습니다. 
+
+[ACT 논문](https://arxiv.org/abs/2304.13705)
+
+### SmolVLA finetuning
+이 방식은 사전 학습된 LLM 기반 정책인 smolvla_base를 불러와서 imitation dataset으로 fine-tuning하는 예시입니다.
 
 ```bash
-pip install tensorboardX
+python lerobot/scripts/train.py \
+  --policy.path=lerobot/smolvla_base \
+  --dataset.repo_id=${HF_USER}/record-test-box \
+  --batch_size=64 \
+  --steps=20000 \
+  --output_dir=outputs/train/my_record_test_policy \
+  --job_name=record_test_training \
+  --policy.device=cuda \
+  --policy.repo_id=${HF_USER}/my_record_test_policy \
+  --wandb.enable=true
 ```
 
-이 명령어를 실행하는 영상을 하단에 첨부합니다.
-
-<video width="680" height="382.5" controls>
-  <source src="assets/video/스크린캐스트 05-14-2025 05:22:22 PM.webm" type="video/webm">
-  Your browser does not support the video tag.
-</video>
-
-tensorboard를 통해 reward, loss, termination 등의 정보를 timestep에 따라 그래프로 확인 할 수 있으며 reward가 잘 올라가는지, loss는 잘 내려가는지와 같은 정보를 판단 할 수 있습니다.
-
-다음은 학습한 모델을 실제로 실행해보는 방법입니다. Isaac Lab에서는 학습이 완료된 정책을 불러와 환경에서 실행해볼 수 있도록 play.py 스크립트를 제공합니다.
-
-실행하는 명령어는 다음과 같습니다.
-
-```bash
-./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/play.py --task=Isaac-Cartpole-v0
-```
-
-이렇게 명령어를 작성하게 되면 Isaac-Cartpole-v0 task를 학습한 가장 최근의 모델을 불러와서 실행하게 됩니다. 만약 특정 모델을 지정하고 싶으면 하단과 같은 명령어를 통해 실행 할 수 있습니다.
-
-```bash
-./isaaclab.sh -p scripts/reinforcement_learning/rsl_rl/play.py --task=Isaac-Cartpole-v0 --checkpoint logs/rsl_rl/cartpole/학습 날짜_학습 시간/model_100.pt
-```
-
-checkpoint를 통해 특정 모델을 지정할 수 있으며 model_().pt의 경우 ()만큼의 timestep을 학습한 모델을 불러와서 play를 진행해 볼 수 있습니다.
-
-이 명령어를 실행하는 영상을 하단에 첨부합니다.
-
-
-<video width="680" height="382.5" controls>
-  <source src="assets/video/스크린캐스트 05-14-2025 05:58:40 PM.webm" type="video/webm">
