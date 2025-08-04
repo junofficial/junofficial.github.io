@@ -7,7 +7,7 @@ nav_order: 0
 # Introduction
 
 <video width="680" height="382.5" controls autoplay muted>
-  <source src="assets/video/스크린캐스트 05-02-2025 04:57:48 PM.webm" type="video/webm">
+  <source src="assets/video/Screencast from 07-04-2025 12_17_07 AM-VEED.mp4" type="video/mp4">
   Your browser does not support the video tag.
 </video>
 
